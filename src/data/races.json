@@ -1,0 +1,110 @@
+[
+  {
+    "id": "bahrain-2026",
+    "round": 1,
+    "name": "Bahrain Grand Prix",
+    "circuit": "Bahrain International Circuit",
+    "date": "2026-03-08",
+    "status": "completed",
+    "result": ["verstappen", "norris", "leclerc", "piastri", "russell", "hamilton", "sainz", "alonso", "gasly", "albon", "tsunoda", "antonelli", "stroll", "ocon", "hadjar", "hulkenberg", "bearman", "lawson", "doohan", "bortoleto"]
+  },
+  {
+    "id": "saudi-arabia-2026",
+    "round": 2,
+    "name": "Saudi Arabian Grand Prix",
+    "circuit": "Jeddah Corniche Circuit",
+    "date": "2026-03-15",
+    "status": "completed",
+    "result": ["verstappen", "leclerc", "norris", "piastri", "russell", "hamilton", "alonso", "sainz", "gasly", "tsunoda", "albon", "antonelli", "ocon", "hadjar", "stroll", "hulkenberg", "bearman", "lawson", "doohan", "bortoleto"]
+  },
+  {
+    "id": "australia-2026",
+    "round": 3,
+    "name": "Australian Grand Prix",
+    "circuit": "Albert Park Circuit",
+    "date": "2026-03-29",
+    "status": "completed",
+    "result": ["norris", "piastri", "verstappen", "leclerc", "russell", "hamilton", "sainz", "alonso", "gasly", "antonelli", "tsunoda", "albon", "ocon", "hadjar", "stroll", "hulkenberg", "bearman", "lawson", "doohan", "bortoleto"]
+  },
+  {
+    "id": "japan-2026",
+    "round": 4,
+    "name": "Japanese Grand Prix",
+    "circuit": "Suzuka Circuit",
+    "date": "2026-04-05",
+    "status": "completed",
+    "result": ["verstappen", "norris", "piastri", "leclerc", "russell", "hamilton", "alonso", "sainz", "antonelli", "gasly", "tsunoda", "albon", "ocon", "hadjar", "stroll", "hulkenberg", "bearman", "lawson", "doohan", "bortoleto"]
+  },
+  {
+    "id": "china-2026",
+    "round": 5,
+    "name": "Chinese Grand Prix",
+    "circuit": "Shanghai International Circuit",
+    "date": "2026-04-19",
+    "status": "upcoming",
+    "result": null
+  },
+  {
+    "id": "miami-2026",
+    "round": 6,
+    "name": "Miami Grand Prix",
+    "circuit": "Miami International Autodrome",
+    "date": "2026-05-03",
+    "status": "upcoming",
+    "result": null
+  },
+  {
+    "id": "emilia-romagna-2026",
+    "round": 7,
+    "name": "Emilia Romagna Grand Prix",
+    "circuit": "Autodromo Enzo e Dino Ferrari",
+    "date": "2026-05-17",
+    "status": "upcoming",
+    "result": null
+  },
+  {
+    "id": "monaco-2026",
+    "round": 8,
+    "name": "Monaco Grand Prix",
+    "circuit": "Circuit de Monaco",
+    "date": "2026-05-24",
+    "status": "upcoming",
+    "result": null
+  },
+  {
+    "id": "canada-2026",
+    "round": 9,
+    "name": "Canadian Grand Prix",
+    "circuit": "Circuit Gilles Villeneuve",
+    "date": "2026-06-07",
+    "status": "upcoming",
+    "result": null
+  },
+  {
+    "id": "spain-2026",
+    "round": 10,
+    "name": "Spanish Grand Prix",
+    "circuit": "Circuit de Barcelona-Catalunya",
+    "date": "2026-06-21",
+    "status": "upcoming",
+    "result": null
+  },
+  {
+    "id": "austria-2026",
+    "round": 11,
+    "name": "Austrian Grand Prix",
+    "circuit": "Red Bull Ring",
+    "date": "2026-07-05",
+    "status": "upcoming",
+    "result": null
+  },
+  {
+    "id": "great-britain-2026",
+    "round": 12,
+    "name": "British Grand Prix",
+    "circuit": "Silverstone Circuit",
+    "date": "2026-07-19",
+    "status": "upcoming",
+    "result": null
+  }
+]
