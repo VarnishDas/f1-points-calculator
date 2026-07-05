@@ -47,7 +47,6 @@ function App() {
             races={races}
             drivers={drivers}
             teams={teams}
-            onClear={resetPredictions}
           />
         }
       />

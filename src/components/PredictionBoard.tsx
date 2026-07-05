@@ -9,7 +9,6 @@ type PredictionBoardProps = {
   races: Race[];
   drivers: Driver[];
   teams: Team[];
-  onClear: () => void;
 };
 
 type BoardColumn = {
@@ -22,7 +21,6 @@ export default function PredictionBoard({
   races,
   drivers,
   teams,
-  onClear,
 }: PredictionBoardProps) {
   const sortedRaces = sortRacesByRound(races);
   const columns = sortedRaces.flatMap((race): BoardColumn[] => {
@@ -124,21 +122,6 @@ export default function PredictionBoard({
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 border-t border-white/10 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs text-neutral-500">
-          Empty upcoming cells are ignored until a driver is assigned.
-        </p>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onClear}
-            aria-label="Clear all predictions"
-            className="h-10 rounded-md border border-white/10 bg-white/[0.03] px-3 text-xs font-bold text-neutral-300 transition hover:border-white/20 hover:bg-white/[0.07] sm:h-9"
-          >
-            Clear Board
-          </button>
-        </div>
-      </div>
     </section>
   );
 }

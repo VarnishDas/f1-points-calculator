@@ -25,14 +25,12 @@ type PredictionWorkspaceProps = {
   races: Race[];
   drivers: Driver[];
   teams: Team[];
-  onClear: () => void;
 };
 
 export default function PredictionWorkspace({
   races,
   drivers,
   teams,
-  onClear,
 }: PredictionWorkspaceProps) {
   const updatePrediction = useCalculatorStore((state) => state.updatePrediction);
   const clearPredictionPosition = useCalculatorStore(
@@ -114,7 +112,6 @@ export default function PredictionWorkspace({
           races={races}
           drivers={drivers}
           teams={teams}
-          onClear={onClear}
         />
         <DragOverlay dropAnimation={null}>
           {activeDriver ? (
