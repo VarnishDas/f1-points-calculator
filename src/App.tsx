@@ -1,14 +1,16 @@
-import { drivers, races, teams } from "./data";
-import { calculateStandings } from "./engine/calculateStandings";
+import {
+  selectDriverStandings,
+  selectTeamStandings,
+  useCalculatorStore,
+} from "./store/useCalculatorStore";
 import StandingsTable from "./components/StandingsTable";
 import TeamStandingsTable from "./components/TeamStandingsTable";
 
 function App() {
-  const { drivers: driverStandings, teams: teamStandings } = calculateStandings(
-    races,
-    drivers,
-    teams,
-  );
+  const drivers = useCalculatorStore((s) => s.drivers);
+  const teams = useCalculatorStore((s) => s.teams);
+  const driverStandings = useCalculatorStore(selectDriverStandings);
+  const teamStandings = useCalculatorStore(selectTeamStandings);
 
   return (
     <main className="min-h-screen px-4 py-8 sm:py-12">
