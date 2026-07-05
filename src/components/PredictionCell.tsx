@@ -1,6 +1,5 @@
 import type { CSSProperties } from "react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
 
 import type { Driver } from "../types/driver";
 import type { Team } from "../types/team";
@@ -73,7 +72,7 @@ function DraggableCellDriver({
   driver,
   team,
 }: CellDriverProps) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } =
+  const { attributes, listeners, setNodeRef, isDragging } =
     useDraggable({
       id: `pick:${raceId}:${driver.id}`,
       data: {
@@ -85,8 +84,8 @@ function DraggableCellDriver({
     });
 
   const style: CSSProperties = {
-    transform: CSS.Translate.toString(transform),
-    opacity: isDragging ? 0.55 : 1,
+    color: team?.color ?? "#f5f5f5",
+    opacity: isDragging ? 0.65 : 1,
   };
 
   return (
@@ -94,7 +93,7 @@ function DraggableCellDriver({
       ref={setNodeRef}
       type="button"
       className="h-full w-full touch-none select-none rounded border border-white/10 bg-white/[0.06] text-[11px] font-black tracking-[0.08em] shadow-sm transition hover:border-white/25 active:cursor-grabbing"
-      style={{ ...style, color: team?.color ?? "#f5f5f5" }}
+      style={style}
       {...attributes}
       {...listeners}
     >

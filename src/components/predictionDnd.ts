@@ -1,4 +1,4 @@
-import type { DragEndEvent } from "@dnd-kit/core";
+import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 
 export type PredictionDragData =
   | {
@@ -24,4 +24,8 @@ export function getPredictionDragPayload(event: DragEndEvent) {
     active: event.active.data.current as PredictionDragData | undefined,
     over: event.over?.data.current as PredictionDropData | undefined,
   };
+}
+
+export function getPredictionDragStartPayload(event: DragStartEvent) {
+  return (event.active.data.current as PredictionDragData | undefined) ?? null;
 }

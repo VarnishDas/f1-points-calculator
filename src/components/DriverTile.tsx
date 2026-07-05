@@ -1,6 +1,6 @@
-import type { CSSProperties } from "react";
+import { forwardRef } from "react";
+import type { ComponentPropsWithoutRef } from "react";
 import { useDraggable } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
 
 import type { Driver } from "../types/driver";
 import type { Team } from "../types/team";
@@ -11,7 +11,7 @@ type DriverTileProps = {
 };
 
 export default function DriverTile({ driver, team }: DriverTileProps) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } =
+  const { attributes, listeners, setNodeRef, isDragging } =
     useDraggable({
       id: `pool:${driver.id}`,
       data: {
@@ -20,19 +20,50 @@ export default function DriverTile({ driver, team }: DriverTileProps) {
       },
     });
 
-  const style: CSSProperties = {
-    transform: CSS.Translate.toString(transform),
-    opacity: isDragging ? 0.55 : 1,
-  };
-
   return (
-    <button
+    <DriverTileSurface
       ref={setNodeRef}
-      type="button"
-      style={style}
-      className="relative min-h-14 min-w-28 touch-none select-none overflow-hidden rounded-md border border-white/10 bg-white/[0.035] px-3 py-2 text-left shadow-sm transition hover:border-white/20 hover:bg-white/[0.07] active:cursor-grabbing sm:min-w-32"
+      driver={driver}
+      team={team}
+      isDragging={isDragging}
       {...attributes}
       {...listeners}
+    />
+  );
+}
+
+type DriverTileSurfaceProps = {
+  driver: Driver;
+  team?: Team;
+  isDragging?: boolean;
+};
+
+export function DriverTilePreview({ driver, team }: DriverTileProps) {
+  return <DriverTileSurface driver={driver} team={team} isOverlay />;
+}
+
+type DriverTileButtonProps = DriverTileSurfaceProps & {
+  isOverlay?: boolean;
+};
+
+const DriverTileSurface = forwardRef<
+  HTMLButtonElement,
+  DriverTileButtonProps & ComponentPropsWithoutRef<"button">
+>(function DriverTileSurface(
+  { driver, team, isDragging = false, isOverlay = false, ...buttonProps },
+  ref,
+) {
+  return (
+    <button
+      ref={ref}
+      type="button"
+      className={
+        isOverlay
+          ? "relative min-h-14 min-w-32 select-none overflow-hidden rounded-md border border-amber-400/50 bg-neutral-900 px-3 py-2 text-left shadow-2xl shadow-black/40 ring-1 ring-amber-400/30"
+          : "relative min-h-14 min-w-28 touch-none select-none overflow-hidden rounded-md border border-white/10 bg-white/[0.035] px-3 py-2 text-left shadow-sm transition hover:border-white/20 hover:bg-white/[0.07] active:cursor-grabbing sm:min-w-32"
+      }
+      style={{ opacity: isDragging ? 0.65 : 1 }}
+      {...buttonProps}
     >
       <span
         aria-hidden="true"
@@ -47,4 +78,4 @@ export default function DriverTile({ driver, team }: DriverTileProps) {
       </span>
     </button>
   );
-}
+});

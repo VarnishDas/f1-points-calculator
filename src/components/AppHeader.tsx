@@ -5,28 +5,13 @@ type AppHeaderProps = {
 export default function AppHeader({ onReset }: AppHeaderProps) {
   return (
     <header className="flex flex-col gap-3 border-b border-white/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between lg:px-6">
-      <div className="flex min-w-0 items-center gap-3">
-        <span
-          aria-hidden="true"
-          className="relative h-5 w-12 shrink-0 overflow-hidden rounded-sm bg-red-600 shadow-[0_0_24px_rgba(220,38,38,0.35)] before:absolute before:left-0 before:top-0 before:h-full before:w-8 before:-skew-x-[25deg] before:bg-red-500 after:absolute after:right-0 after:top-0 after:h-full after:w-4 after:-skew-x-[25deg] after:bg-neutral-950"
-        />
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-            <h1 className="shrink-0 text-lg font-black tracking-tight text-white sm:text-xl">
-              F1 2026
-            </h1>
-            <span
-              aria-hidden="true"
-              className="hidden h-6 w-px bg-white/15 sm:block"
-            />
-            <p className="truncate text-sm text-neutral-400 sm:text-base">
-              Points Calculator
-            </p>
-          </div>
-          <p className="hidden truncate text-xs text-neutral-500 xl:block">
-            Drag drivers to simulate the championship
-          </p>
-        </div>
+      <div className="min-w-0">
+        <h1 className="text-xl font-black tracking-tight text-white sm:text-2xl">
+          Formula 1 Points Calculator
+        </h1>
+        <p className="mt-1 truncate text-sm text-neutral-500 sm:text-base">
+          Drag drivers to simulate the championship
+        </p>
       </div>
 
       <div className="flex items-center gap-2">

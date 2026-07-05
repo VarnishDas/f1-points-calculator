@@ -1,13 +1,24 @@
-import { DndContext, type DragEndEvent, closestCenter } from "@dnd-kit/core";
-import { arrayMove } from "@dnd-kit/sortable";
+import { useMemo, useState } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  type DragEndEvent,
+  type DragStartEvent,
+  closestCenter,
+} from "@dnd-kit/core";
 
 import type { Driver } from "../types/driver";
 import type { Race } from "../types/race";
 import type { Team } from "../types/team";
 import { useCalculatorStore } from "../store/useCalculatorStore";
 import DriverPool from "./DriverPool";
+import { DriverTilePreview } from "./DriverTile";
 import PredictionBoard from "./PredictionBoard";
-import { getPredictionDragPayload } from "./predictionDnd";
+import {
+  getPredictionDragPayload,
+  getPredictionDragStartPayload,
+  type PredictionDragData,
+} from "./predictionDnd";
 
 type PredictionWorkspaceProps = {
   races: Race[];
@@ -25,8 +36,25 @@ export default function PredictionWorkspace({
   onClear,
 }: PredictionWorkspaceProps) {
   const updatePrediction = useCalculatorStore((state) => state.updatePrediction);
+  const [activeDrag, setActiveDrag] = useState<PredictionDragData | null>(null);
+  const driverById = useMemo(
+    () => new Map(drivers.map((driver) => [driver.id, driver])),
+    [drivers],
+  );
+  const teamById = useMemo(
+    () => new Map(teams.map((team) => [team.id, team])),
+    [teams],
+  );
+
+  const activeDriver = activeDrag ? driverById.get(activeDrag.driverId) : undefined;
+  const activeTeam = activeDriver ? teamById.get(activeDriver.teamId) : undefined;
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveDrag(getPredictionDragStartPayload(event));
+  };
 
   const handleDragEnd = (event: DragEndEvent) => {
+    setActiveDrag(null);
     const { active, over } = getPredictionDragPayload(event);
     if (!active || !over || over.type !== "prediction-cell" || !over.editable) {
       return;
@@ -40,8 +68,10 @@ export default function PredictionWorkspace({
 
     if (active.type === "prediction-driver" && active.raceId === targetRace.id) {
       if (existingIndex < 0 || existingIndex === over.index) return;
-      const targetIndex = Math.min(over.index, currentOrder.length - 1);
-      updatePrediction(targetRace.id, arrayMove(currentOrder, existingIndex, targetIndex));
+      currentOrder.splice(existingIndex, 1);
+      const insertIndex = Math.min(over.index, currentOrder.length);
+      currentOrder.splice(insertIndex, 0, active.driverId);
+      updatePrediction(targetRace.id, currentOrder);
       return;
     }
 
@@ -59,7 +89,12 @@ export default function PredictionWorkspace({
 
   return (
     <div className="flex min-w-0 flex-col gap-3">
-      <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragCancel={() => setActiveDrag(null)}
+      >
         <DriverPool drivers={drivers} teams={teams} />
         <PredictionBoard
           races={races}
@@ -68,6 +103,11 @@ export default function PredictionWorkspace({
           onClear={onClear}
           onAutoFill={handleAutoFill}
         />
+        <DragOverlay dropAnimation={null}>
+          {activeDriver ? (
+            <DriverTilePreview driver={activeDriver} team={activeTeam} />
+          ) : null}
+        </DragOverlay>
       </DndContext>
     </div>
   );
