@@ -2,8 +2,35 @@ import { describe, it, expect } from "vitest";
 import { calculateStandings } from "../calculateStandings";
 import { drivers, races, teams } from "../../data";
 import type { Driver } from "../../types/driver";
+import type { EventResultEntry } from "../../types/race";
 import type { Race } from "../../types/race";
 import type { Team } from "../../types/team";
+
+function gpResult(
+  driverIds: string[],
+  teamByDriver: Record<string, string> = {},
+  fallbackTeamId = "t",
+): EventResultEntry[] {
+  return driverIds.map((driverId, index) => ({
+    position: index + 1,
+    driverId,
+    teamId: teamByDriver[driverId] ?? fallbackTeamId,
+  }));
+}
+
+function makeRace(partial: Omit<Race, "grandPrixResult" | "sprintResult" | "prediction"> & {
+  result: string[];
+  teamByDriver?: Record<string, string>;
+  fallbackTeamId?: string;
+}): Race {
+  const { result, teamByDriver, fallbackTeamId, ...race } = partial;
+  return {
+    ...race,
+    grandPrixResult: gpResult(result, teamByDriver, fallbackTeamId),
+    sprintResult: null,
+    prediction: null,
+  };
+}
 
 describe("calculateStandings (real 2026 data)", () => {
   const { drivers: driverStandings, teams: teamStandings } = calculateStandings(
@@ -12,12 +39,12 @@ describe("calculateStandings (real 2026 data)", () => {
     teams,
   );
 
-  it("returns a standing for every driver (20)", () => {
-    expect(driverStandings).toHaveLength(20);
+  it("returns a standing for every generated driver", () => {
+    expect(driverStandings).toHaveLength(drivers.length);
   });
 
-  it("returns a standing for every team (10)", () => {
-    expect(teamStandings).toHaveLength(10);
+  it("returns a standing for every generated team", () => {
+    expect(teamStandings).toHaveLength(teams.length);
   });
 
   it("assigns sequential driver positions starting at 1", () => {
@@ -26,28 +53,22 @@ describe("calculateStandings (real 2026 data)", () => {
     });
   });
 
-  it("puts Verstappen first after the 4 completed races with 90 points and 3 wins", () => {
-    expect(driverStandings[0].driverId).toBe("verstappen");
-    expect(driverStandings[0].points).toBe(90);
-    expect(driverStandings[0].wins).toBe(3);
-  });
+  it("records wins from generated official GP and sprint classifications", () => {
+    const generatedWins = new Map<string, number>();
+    for (const race of races) {
+      const winners = [
+        race.grandPrixResult?.find((entry) => entry.position === 1),
+        race.sprintResult?.find((entry) => entry.position === 1),
+      ];
+      for (const winner of winners) {
+        if (!winner) continue;
+        generatedWins.set(winner.driverId, (generatedWins.get(winner.driverId) ?? 0) + 1);
+      }
+    }
 
-  it("gives Norris 76 points and 1 win", () => {
-    const norris = driverStandings.find((s) => s.driverId === "norris");
-    expect(norris?.points).toBe(76);
-    expect(norris?.wins).toBe(1);
-  });
-
-  it("gives Russell a consistent 10 points per race (40 total)", () => {
-    const russell = driverStandings.find((s) => s.driverId === "russell");
-    expect(russell?.points).toBe(40);
-  });
-
-  it("awards 0 points to drivers who only finished outside the top 10", () => {
-    const doohan = driverStandings.find((s) => s.driverId === "doohan");
-    const bortoleto = driverStandings.find((s) => s.driverId === "bortoleto");
-    expect(doohan?.points).toBe(0);
-    expect(bortoleto?.points).toBe(0);
+    for (const standing of driverStandings) {
+      expect(standing.wins).toBe(generatedWins.get(standing.driverId) ?? 0);
+    }
   });
 
   it("orders drivers by total points descending", () => {
@@ -55,10 +76,10 @@ describe("calculateStandings (real 2026 data)", () => {
     expect(points).toEqual([...points].sort((a, b) => b - a));
   });
 
-  it("sums constructor points from both drivers (McLaren = 133, P1)", () => {
-    const mclaren = teamStandings.find((t) => t.teamId === "mclaren");
-    expect(mclaren?.points).toBe(133);
-    expect(teamStandings[0].teamId).toBe("mclaren");
+  it("keeps all generated standing point totals non-negative", () => {
+    for (const standing of [...driverStandings, ...teamStandings]) {
+      expect(standing.points).toBeGreaterThanOrEqual(0);
+    }
   });
 
   it("orders teams by total points descending", () => {
@@ -90,7 +111,7 @@ describe("calculateStandings (tie-breaking via countback)", () => {
   ];
 
   const synthRaces: Race[] = [
-    {
+    makeRace({
       id: "r1",
       round: 1,
       name: "R1",
@@ -98,8 +119,8 @@ describe("calculateStandings (tie-breaking via countback)", () => {
       date: "2026-01-01",
       status: "completed",
       result: ["a", "c", "b", "d", "e", "f", "g", "h", "i", "j", "k"],
-    },
-    {
+    }),
+    makeRace({
       id: "r2",
       round: 2,
       name: "R2",
@@ -107,8 +128,8 @@ describe("calculateStandings (tie-breaking via countback)", () => {
       date: "2026-01-08",
       status: "completed",
       result: ["a", "c", "d", "e", "b", "f", "g", "h", "i", "j", "k"],
-    },
-    {
+    }),
+    makeRace({
       id: "r3",
       round: 3,
       name: "R3",
@@ -116,7 +137,7 @@ describe("calculateStandings (tie-breaking via countback)", () => {
       date: "2026-01-15",
       status: "completed",
       result: ["b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "a"],
-    },
+    }),
   ];
 
   const { drivers: standings } = calculateStandings(synthRaces, synthDrivers, synthTeams);
@@ -171,7 +192,7 @@ describe("calculateStandings (classification countback details)", () => {
       { id: "team", name: "Team", fullName: "Team", color: "#000000" },
     ];
     const testRaces: Race[] = [
-      {
+      makeRace({
         id: "classification",
         round: 1,
         name: "Classification",
@@ -179,7 +200,8 @@ describe("calculateStandings (classification countback details)", () => {
         date: "2026-01-01",
         status: "completed",
         result: driverIds,
-      },
+        fallbackTeamId: "team",
+      }),
     ];
 
     const { drivers: standings } = calculateStandings(
@@ -219,7 +241,7 @@ describe("calculateStandings (classification countback details)", () => {
       ...driver,
     }));
     const testRaces: Race[] = [
-      {
+      makeRace({
         id: "r1",
         round: 1,
         name: "R1",
@@ -227,8 +249,9 @@ describe("calculateStandings (classification countback details)", () => {
         date: "2026-01-01",
         status: "completed",
         result: ["a1", "b1", "f1", "f2", "f3", "f4", "f5", "b2", "f6", "f7", "a2", "f8"],
-      },
-      {
+        teamByDriver: Object.fromEntries(testDrivers.map((driver) => [driver.id, driver.teamId])),
+      }),
+      makeRace({
         id: "r2",
         round: 2,
         name: "R2",
@@ -236,7 +259,8 @@ describe("calculateStandings (classification countback details)", () => {
         date: "2026-01-08",
         status: "completed",
         result: ["f1", "f2", "f3", "f4", "f5", "f6", "f7", "b1", "f8", "a1", "b2", "a2"],
-      },
+        teamByDriver: Object.fromEntries(testDrivers.map((driver) => [driver.id, driver.teamId])),
+      }),
     ];
 
     const { teams: standings } = calculateStandings(
@@ -250,5 +274,125 @@ describe("calculateStandings (classification countback details)", () => {
     expect(teamA?.points).toBe(26);
     expect(teamB?.points).toBe(26);
     expect(teamA!.position).toBeLessThan(teamB!.position);
+  });
+});
+
+describe("calculateStandings (event-specific official results)", () => {
+  const testTeams: Team[] = [
+    { id: "team-a", name: "Team A", fullName: "Team A", color: "#111111" },
+    { id: "team-b", name: "Team B", fullName: "Team B", color: "#222222" },
+  ];
+
+  it("scores official constructor points from event teamId instead of driver.teamId", () => {
+    const testDrivers: Driver[] = [
+      {
+        id: "reserve",
+        number: null,
+        code: "RES",
+        firstName: "Reserve",
+        lastName: "Driver",
+        teamId: "team-a",
+        country: "X",
+      },
+    ];
+    const testRaces: Race[] = [
+      {
+        id: "r1",
+        round: 1,
+        name: "R1",
+        circuit: "Test",
+        date: "2026-01-01",
+        status: "completed",
+        grandPrixResult: [{ position: 1, driverId: "reserve", teamId: "team-b" }],
+        sprintResult: null,
+        prediction: null,
+      },
+    ];
+
+    const standings = calculateStandings(testRaces, testDrivers, testTeams);
+
+    expect(standings.drivers.find((entry) => entry.driverId === "reserve")?.points).toBe(25);
+    expect(standings.teams.find((entry) => entry.teamId === "team-b")?.points).toBe(25);
+    expect(standings.teams.find((entry) => entry.teamId === "team-a")?.points).toBe(0);
+  });
+
+  it("allows the same driver to score for different official teams across events", () => {
+    const testDrivers: Driver[] = [
+      {
+        id: "switcher",
+        number: 99,
+        code: "SWI",
+        firstName: "Team",
+        lastName: "Switcher",
+        teamId: "team-a",
+        country: "X",
+      },
+    ];
+    const testRaces: Race[] = [
+      {
+        id: "r1",
+        round: 1,
+        name: "R1",
+        circuit: "Test",
+        date: "2026-01-01",
+        status: "completed",
+        grandPrixResult: [{ position: 1, driverId: "switcher", teamId: "team-a" }],
+        sprintResult: null,
+        prediction: null,
+      },
+      {
+        id: "r2",
+        round: 2,
+        name: "R2",
+        circuit: "Test",
+        date: "2026-01-08",
+        status: "completed",
+        grandPrixResult: [{ position: 1, driverId: "switcher", teamId: "team-b" }],
+        sprintResult: null,
+        prediction: null,
+      },
+    ];
+
+    const standings = calculateStandings(testRaces, testDrivers, testTeams);
+
+    expect(standings.drivers[0].points).toBe(50);
+    expect(standings.teams.find((entry) => entry.teamId === "team-a")?.points).toBe(25);
+    expect(standings.teams.find((entry) => entry.teamId === "team-b")?.points).toBe(25);
+  });
+
+  it("adds official sprint points and gives sprint P9 zero", () => {
+    const testDrivers: Driver[] = ["gp", "sprint", "p9"].map((id, index) => ({
+      id,
+      number: index + 1,
+      code: id.toUpperCase(),
+      firstName: id,
+      lastName: id,
+      teamId: "team-a",
+      country: "X",
+    }));
+    const testRaces: Race[] = [
+      {
+        id: "r1",
+        round: 1,
+        name: "R1",
+        circuit: "Test",
+        date: "2026-01-01",
+        status: "completed",
+        hasSprint: true,
+        grandPrixResult: [{ position: 1, driverId: "gp", teamId: "team-a" }],
+        sprintResult: [
+          { position: 1, driverId: "sprint", teamId: "team-a" },
+          { position: 9, driverId: "p9", teamId: "team-a" },
+        ],
+        prediction: null,
+      },
+    ];
+
+    const standings = calculateStandings(testRaces, testDrivers, testTeams);
+
+    expect(standings.drivers.find((entry) => entry.driverId === "gp")?.points).toBe(25);
+    expect(standings.drivers.find((entry) => entry.driverId === "sprint")?.points).toBe(8);
+    expect(standings.drivers.find((entry) => entry.driverId === "p9")?.points).toBe(0);
+    expect(standings.teams.find((entry) => entry.teamId === "team-a")?.points).toBe(33);
   });
 });

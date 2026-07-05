@@ -1,30 +1,21 @@
 import type { Driver } from "../types/driver";
 import type { Race } from "../types/race";
 import type { Team } from "../types/team";
-import { RACE_CLASSIFICATION_SIZE } from "../constants/race";
+import { getClassificationSize } from "../utils/classification";
 import { sortRacesByRound } from "./raceUtils";
 import PredictionCell from "./PredictionCell";
-
-const RACE_LABELS: Record<string, string> = {
-  "bahrain-2026": "BHR",
-  "saudi-arabia-2026": "SAU",
-  "australia-2026": "AUS",
-  "japan-2026": "JPN",
-  "china-2026": "CHN",
-  "miami-2026": "MIA",
-  "emilia-romagna-2026": "EMI",
-  "monaco-2026": "MON",
-  "canada-2026": "CAN",
-  "spain-2026": "ESP",
-  "austria-2026": "AUT",
-  "great-britain-2026": "GBR",
-};
 
 type PredictionBoardProps = {
   races: Race[];
   drivers: Driver[];
   teams: Team[];
   onClear: () => void;
+};
+
+type BoardColumn = {
+  id: string;
+  race: Race;
+  session: "grandPrix" | "sprint";
 };
 
 export default function PredictionBoard({
@@ -34,8 +25,25 @@ export default function PredictionBoard({
   onClear,
 }: PredictionBoardProps) {
   const sortedRaces = sortRacesByRound(races);
+  const columns = sortedRaces.flatMap((race): BoardColumn[] => {
+    const raceColumn: BoardColumn = {
+      id: `${race.id}:gp`,
+      race,
+      session: "grandPrix",
+    };
+    if (!race.hasSprint && !race.sprintResult?.length) return [raceColumn];
+    return [
+      raceColumn,
+      {
+        id: `${race.id}:sprint`,
+        race,
+        session: "sprint",
+      },
+    ];
+  });
   const driverById = new Map(drivers.map((driver) => [driver.id, driver]));
   const teamById = new Map(teams.map((team) => [team.id, team]));
+  const classificationSize = getClassificationSize(races);
 
   return (
     <section className="flex min-w-0 flex-col rounded-md border border-white/10 bg-neutral-950/75 shadow-2xl shadow-black/25 lg:min-h-0 lg:flex-1">
@@ -59,35 +67,46 @@ export default function PredictionBoard({
         <div
           className="grid w-max gap-1"
           style={{
-            gridTemplateColumns: `2rem repeat(${sortedRaces.length}, 4rem)`,
+            gridTemplateColumns: `2rem repeat(${columns.length}, 5.5rem)`,
           }}
         >
           <div className="sticky left-0 z-20 rounded border border-white/[0.06] bg-neutral-950" />
-          {sortedRaces.map((race) => {
-            const predicted = race.status === "upcoming" && !!race.result?.length;
+          {columns.map(({ id, race, session }) => {
+            const isSprint = session === "sprint";
+            const predicted = !isSprint && race.status === "upcoming" && !!race.prediction?.length;
+            const completed = isSprint ? !!race.sprintResult?.length : race.status === "completed";
             return (
               <div
-                key={race.id}
+                key={id}
                 className={
                   predicted
                     ? "rounded border border-red-500/50 bg-red-500/10 px-1 py-1.5 text-center"
-                    : race.status === "completed"
+                    : completed
                       ? "rounded border border-emerald-500/30 bg-emerald-500/10 px-1 py-1.5 text-center"
                       : "rounded border border-white/10 bg-white/[0.025] px-1 py-1.5 text-center"
                 }
-                title={race.name}
+                title={isSprint ? `${race.name} Sprint` : race.name}
               >
                 <div className="text-xs font-black text-neutral-100">
                   R{race.round}
                 </div>
-                <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-neutral-400">
-                  {RACE_LABELS[race.id] ?? race.name.slice(0, 3)}
+                <div className="mt-1 min-h-7 text-[10px] font-bold leading-tight text-neutral-400">
+                  <span className="block truncate">{formatRaceLabel(race.name)}</span>
+                  {isSprint ? (
+                    <span className="block uppercase tracking-wide text-sky-300">
+                      Sprint
+                    </span>
+                  ) : (
+                    <span className="block uppercase tracking-wide text-neutral-600">
+                      GP
+                    </span>
+                  )}
                 </div>
                 <span
                   className={
                     predicted
                       ? "mx-auto mt-1 block h-1.5 w-1.5 rounded-full bg-red-500"
-                      : race.status === "completed"
+                      : completed
                         ? "mx-auto mt-1 block h-1.5 w-1.5 rounded-full bg-emerald-500"
                         : "mx-auto mt-1 block h-1.5 w-1.5 rounded-full bg-neutral-600"
                   }
@@ -96,11 +115,11 @@ export default function PredictionBoard({
             );
           })}
 
-          {Array.from({ length: RACE_CLASSIFICATION_SIZE }, (_, positionIndex) => (
+          {Array.from({ length: classificationSize }, (_, positionIndex) => (
             <BoardRow
               key={positionIndex}
               positionIndex={positionIndex}
-              races={sortedRaces}
+              columns={columns}
               driverById={driverById}
               teamById={teamById}
             />
@@ -129,30 +148,43 @@ export default function PredictionBoard({
 
 type BoardRowProps = {
   positionIndex: number;
-  races: Race[];
+  columns: BoardColumn[];
   driverById: Map<string, Driver>;
   teamById: Map<string, Team>;
 };
 
-function BoardRow({ positionIndex, races, driverById, teamById }: BoardRowProps) {
+function BoardRow({ positionIndex, columns, driverById, teamById }: BoardRowProps) {
   return (
     <>
       <div className="sticky left-0 z-10 grid h-11 place-items-center rounded border border-white/[0.06] bg-neutral-950 text-xs tabular-nums text-neutral-300 lg:h-8">
         {positionIndex + 1}
       </div>
-      {races.map((race) => {
-        const driverId = race.result?.[positionIndex];
+      {columns.map(({ id, race, session }) => {
+        const isSprint = session === "sprint";
+        const officialEntry =
+          isSprint
+            ? race.sprintResult?.find(
+                (entry) => entry.position === positionIndex + 1,
+              )
+            : race.status === "completed"
+              ? race.grandPrixResult?.find(
+                (entry) => entry.position === positionIndex + 1,
+              )
+              : undefined;
+        const driverId =
+          officialEntry?.driverId ?? (!isSprint ? race.prediction?.[positionIndex] : undefined);
         const driver = driverId ? driverById.get(driverId) : undefined;
-        const team = driver ? teamById.get(driver.teamId) : undefined;
+        const teamId = officialEntry?.teamId ?? driver?.teamId;
+        const team = teamId ? teamById.get(teamId) : undefined;
 
         return (
           <PredictionCell
-            key={`${race.id}-${positionIndex}`}
+            key={`${id}-${positionIndex}`}
             raceId={race.id}
             positionIndex={positionIndex}
             driver={driver}
             team={team}
-            editable={race.status === "upcoming"}
+            editable={!isSprint && race.status === "upcoming"}
           />
         );
       })}
@@ -167,4 +199,14 @@ function StatusLegend({ color, label }: { color: string; label: string }) {
       {label}
     </span>
   );
+}
+
+function formatRaceLabel(name: string): string {
+  return name
+    .replace(/\s+Grand Prix$/i, "")
+    .replace(/^Great Britain$/i, "British")
+    .replace(/^United States$/i, "US")
+    .replace(/^Mexico City$/i, "Mexico")
+    .replace(/^Saudi Arabian$/i, "Saudi")
+    .replace(/^Emilia Romagna$/i, "Imola");
 }

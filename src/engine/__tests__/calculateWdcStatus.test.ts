@@ -22,6 +22,15 @@ function makeDrivers(ids: string[]): Driver[] {
 }
 
 function race(id: string, result: string[] | null, status: Race["status"]): Race {
+  const grandPrixResult =
+    status === "completed" && result
+      ? result.map((driverId, index) => ({
+          position: index + 1,
+          driverId,
+          teamId: "team",
+        }))
+      : null;
+
   return {
     id,
     round: Number(id.replace(/\D/g, "")) || 1,
@@ -29,7 +38,9 @@ function race(id: string, result: string[] | null, status: Race["status"]): Race
     circuit: "Test",
     date: "2026-01-01",
     status,
-    result,
+    grandPrixResult,
+    sprintResult: null,
+    prediction: status === "upcoming" ? result : null,
   };
 }
 

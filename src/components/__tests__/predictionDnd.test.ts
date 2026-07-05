@@ -19,9 +19,9 @@ describe("placeDriverAtPredictionPosition", () => {
       RACE_CLASSIFICATION_SIZE - 1,
     );
 
-    expect(RACE_CLASSIFICATION_SIZE).toBe(20);
-    expect(result).toHaveLength(20);
-    expect(result[19]).toBe("norris");
+    expect(RACE_CLASSIFICATION_SIZE).toBe(22);
+    expect(result).toHaveLength(22);
+    expect(result[21]).toBe("norris");
   });
 
   it("moves an existing driver without compacting empty positions", () => {

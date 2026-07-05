@@ -39,7 +39,7 @@ export interface EncodedScenarioV1 {
 /**
  * Build the minimal versioned scenario object for the given races.
  *
- * Only upcoming races with a non-null `result` contribute. Completed races
+ * Only upcoming races with a non-null `prediction` contribute. Completed races
  * are never encoded (their results are static app data). Empty cells in a
  * prediction (sparse array holes) are skipped, but the remaining entries
  * keep their explicit position so gaps are preserved on decode.
@@ -51,11 +51,11 @@ export function encodeScenario(races: readonly Race[]): EncodedScenarioV1 {
   const predictions: ScenarioPredictions = {};
 
   for (const race of races) {
-    if (race.status !== "upcoming" || !race.result) continue;
+    if (race.status !== "upcoming" || !race.prediction) continue;
 
     const entries: ScenarioPredictionEntry[] = [];
-    for (let index = 0; index < race.result.length; index++) {
-      const driverId = race.result[index];
+    for (let index = 0; index < race.prediction.length; index++) {
+      const driverId = race.prediction[index];
       if (!driverId) continue;
       entries.push({ p: index + 1, d: driverId });
     }

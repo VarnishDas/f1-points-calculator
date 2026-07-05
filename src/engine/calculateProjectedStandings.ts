@@ -10,9 +10,9 @@ import { calculateStandingsForMode } from "./standingsAggregation";
  *
  * Includes every race that currently has a result:
  *   - completed races (official results)
- *   - upcoming races where the user has made a prediction (non-null result)
+ *   - upcoming races where the user has made a prediction (non-null prediction)
  *
- * Upcoming races with no prediction (`result === null`) are ignored, so
+ * Upcoming races with no prediction (`prediction === null`) are ignored, so
  * before any predictions are made this is equivalent to `calculateStandings`.
  * Tie-breaking uses the same F1 countback rules as the official standings.
  */

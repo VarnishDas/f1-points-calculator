@@ -11,7 +11,9 @@ function makeRace(round: number, id?: string): Race {
     circuit: "Circuit",
     date: "2026-01-01",
     status: "upcoming",
-    result: null,
+    grandPrixResult: null,
+    sprintResult: null,
+    prediction: null,
   };
 }
 

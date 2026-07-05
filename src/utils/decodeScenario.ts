@@ -1,6 +1,6 @@
 import type { Driver } from "../types/driver";
 import type { Race } from "../types/race";
-import { RACE_CLASSIFICATION_SIZE } from "../constants/race";
+import { getClassificationSize } from "./classification";
 
 import {
   SCENARIO_HASH_KEY,
@@ -60,6 +60,7 @@ function validateScenario(data: unknown, context: DecodeContext): DecodedScenari
     context.races.filter((race) => race.status === "upcoming").map((race) => race.id),
   );
   const driverIds = new Set(context.drivers.map((driver) => driver.id));
+  const classificationSize = getClassificationSize(context.races);
 
   const predictions: ScenarioPredictions = {};
 
@@ -72,7 +73,7 @@ function validateScenario(data: unknown, context: DecodeContext): DecodedScenari
 
     for (const raw of rawEntries) {
       if (!isEntry(raw)) continue;
-      if (raw.p < 1 || raw.p > RACE_CLASSIFICATION_SIZE) continue;
+      if (raw.p < 1 || raw.p > classificationSize) continue;
       if (!driverIds.has(raw.d)) continue;
       if (seenDrivers.has(raw.d)) continue;
 

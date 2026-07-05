@@ -26,7 +26,9 @@ function makeRace(partial: Partial<Race> & Pick<Race, "id" | "status">): Race {
     name: partial.id,
     circuit: "Circuit",
     date: "2026-01-01",
-    result: null,
+    grandPrixResult: null,
+    sprintResult: null,
+    prediction: null,
     ...partial,
   };
 }
@@ -36,14 +38,17 @@ function contextFor(races: Race[]): DecodeContext {
 }
 
 const UPCOMING_RACES: Race[] = [
-  makeRace({ id: "china-2026", status: "upcoming", result: null }),
-  makeRace({ id: "miami-2026", status: "upcoming", result: null }),
+  makeRace({ id: "china-2026", status: "upcoming", prediction: null }),
+  makeRace({ id: "miami-2026", status: "upcoming", prediction: null }),
 ];
 
 const COMPLETED_RACE: Race = makeRace({
   id: "bahrain-2026",
   status: "completed",
-  result: ["verstappen", "norris"],
+  grandPrixResult: [
+    { position: 1, driverId: "verstappen", teamId: "red-bull" },
+    { position: 2, driverId: "norris", teamId: "mclaren" },
+  ],
 });
 
 function encodePayload(data: unknown): string {
@@ -52,19 +57,19 @@ function encodePayload(data: unknown): string {
 
 describe("decodeScenario round trip", () => {
   it("round-trips a single race prediction", () => {
-    const race = makeRace({ id: "china-2026", status: "upcoming", result: ["norris", "piastri", "verstappen"] });
+    const race = makeRace({ id: "china-2026", status: "upcoming", prediction: ["norris", "piastri", "verstappen"] });
     const scenario = encodeScenario([race]);
     const encoded = encodePayload(scenario);
 
-    const decoded = decodeScenarioFromString(encoded, contextFor([makeRace({ id: "china-2026", status: "upcoming", result: null })]));
+    const decoded = decodeScenarioFromString(encoded, contextFor([makeRace({ id: "china-2026", status: "upcoming", prediction: null })]));
 
     expect(decoded).toEqual(scenario);
   });
 
   it("round-trips multiple race predictions", () => {
     const races: Race[] = [
-      makeRace({ id: "china-2026", status: "upcoming", result: ["norris", "piastri"] }),
-      makeRace({ id: "miami-2026", status: "upcoming", result: ["verstappen", "leclerc"] }),
+      makeRace({ id: "china-2026", status: "upcoming", prediction: ["norris", "piastri"] }),
+      makeRace({ id: "miami-2026", status: "upcoming", prediction: ["verstappen", "leclerc"] }),
     ];
     const scenario = encodeScenario(races);
     const encoded = encodePayload(scenario);
@@ -77,24 +82,24 @@ describe("decodeScenario round trip", () => {
   it("preserves exact positions including empty gaps", () => {
     const sparse: string[] = [];
     sparse[4] = "norris";
-    const race = makeRace({ id: "china-2026", status: "upcoming", result: sparse });
+    const race = makeRace({ id: "china-2026", status: "upcoming", prediction: sparse });
     const scenario = encodeScenario([race]);
     const encoded = encodePayload(scenario);
 
-    const decoded = decodeScenarioFromString(encoded, contextFor([makeRace({ id: "china-2026", status: "upcoming", result: null })]));
+    const decoded = decodeScenarioFromString(encoded, contextFor([makeRace({ id: "china-2026", status: "upcoming", prediction: null })]));
 
     expect(decoded?.predictions["china-2026"]).toEqual([{ p: 5, d: "norris" }]);
   });
 
-  it("preserves the maximum classified finishing position (P20)", () => {
+  it("preserves the minimum supported classified finishing position (P22)", () => {
     const sparse: string[] = [];
-    sparse[19] = "norris";
-    const race = makeRace({ id: "china-2026", status: "upcoming", result: sparse });
+    sparse[21] = "norris";
+    const race = makeRace({ id: "china-2026", status: "upcoming", prediction: sparse });
     const encoded = encodePayload(encodeScenario([race]));
 
-    const decoded = decodeScenarioFromString(encoded, contextFor([makeRace({ id: "china-2026", status: "upcoming", result: null })]));
+    const decoded = decodeScenarioFromString(encoded, contextFor([makeRace({ id: "china-2026", status: "upcoming", prediction: null })]));
 
-    expect(decoded?.predictions["china-2026"]).toEqual([{ p: 20, d: "norris" }]);
+    expect(decoded?.predictions["china-2026"]).toEqual([{ p: 22, d: "norris" }]);
   });
 });
 
@@ -180,7 +185,7 @@ describe("decodeScenario data filtering", () => {
       predictions: {
         "china-2026": [
           { p: 0, d: "norris" },
-          { p: 21, d: "piastri" },
+          { p: 23, d: "piastri" },
           { p: 3, d: "verstappen" },
         ],
       },
@@ -244,7 +249,7 @@ describe("decodeScenario data filtering", () => {
 
 describe("decodeScenarioFromHash", () => {
   it("decodes a hash fragment carrying the scenario key", () => {
-    const race = makeRace({ id: "china-2026", status: "upcoming", result: ["norris"] });
+    const race = makeRace({ id: "china-2026", status: "upcoming", prediction: ["norris"] });
     const hash = `#${SCENARIO_HASH_KEY}=${encodePayload(encodeScenario([race]))}`;
 
     const decoded = decodeScenarioFromHash(hash, contextFor(UPCOMING_RACES));
@@ -253,7 +258,7 @@ describe("decodeScenarioFromHash", () => {
   });
 
   it("handles a hash fragment without a leading #", () => {
-    const race = makeRace({ id: "china-2026", status: "upcoming", result: ["norris"] });
+    const race = makeRace({ id: "china-2026", status: "upcoming", prediction: ["norris"] });
     const hash = `${SCENARIO_HASH_KEY}=${encodePayload(encodeScenario([race]))}`;
 
     const decoded = decodeScenarioFromHash(hash, contextFor(UPCOMING_RACES));

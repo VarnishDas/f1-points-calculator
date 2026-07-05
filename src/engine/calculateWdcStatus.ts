@@ -5,6 +5,7 @@ import type { Team } from "../types/team";
 import type { DriverChampionshipEntry } from "./standingsAggregation";
 
 import { getPointsForPosition } from "./calculateRacePoints";
+import { getClassificationSize } from "../utils/classification";
 import {
   compareChampionshipPerformance,
   resolveChampionshipOrder,
@@ -28,10 +29,10 @@ function bestAvailablePosition(
   classificationSize: number,
 ): number | null {
   if (race.status !== "upcoming") return null;
-  if (race.result?.includes(driverId)) return null;
+  if (race.prediction?.includes(driverId)) return null;
 
   for (let index = 0; index < classificationSize; index++) {
-    if (!race.result?.[index]) return index + 1;
+    if (!race.prediction?.[index]) return index + 1;
   }
 
   return null;
@@ -99,7 +100,7 @@ export function calculateWdcStatus(
     teams,
     "completedAndPredicted",
   ).drivers;
-  const classificationSize = drivers.length;
+  const classificationSize = getClassificationSize(races);
   const statuses: WdcStatusByDriverId = Object.fromEntries(
     drivers.map((driver) => [driver.id, "inContention" satisfies WdcStatus]),
   );

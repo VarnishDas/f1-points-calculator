@@ -1,6 +1,7 @@
 export interface Driver {
   id: string;
-  number: number;
+  sourceId?: string;
+  number: number | null;
   code: string;
   firstName: string;
   lastName: string;

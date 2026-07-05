@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
   POINTS_TABLE,
+  SPRINT_POINTS_TABLE,
   getPointsForPosition,
+  getSprintPointsForPosition,
   calculateRacePoints,
 } from "../calculateRacePoints";
 
@@ -12,6 +14,12 @@ describe("POINTS_TABLE", () => {
 
   it("matches the F1 2026 Grand Prix points system", () => {
     expect(POINTS_TABLE).toEqual([25, 18, 15, 12, 10, 8, 6, 4, 2, 1]);
+  });
+});
+
+describe("SPRINT_POINTS_TABLE", () => {
+  it("matches the sprint points system", () => {
+    expect(SPRINT_POINTS_TABLE).toEqual([8, 7, 6, 5, 4, 3, 2, 1]);
   });
 });
 
@@ -42,6 +50,22 @@ describe("getPointsForPosition", () => {
     expect(getPointsForPosition(-1)).toBe(0);
     expect(getPointsForPosition(21)).toBe(0);
     expect(getPointsForPosition(Number.NaN)).toBe(0);
+  });
+});
+
+describe("getSprintPointsForPosition", () => {
+  it.each([
+    [1, 8],
+    [2, 7],
+    [3, 6],
+    [4, 5],
+    [5, 4],
+    [6, 3],
+    [7, 2],
+    [8, 1],
+    [9, 0],
+  ])("awards %i sprint points for position %i", (position, expected) => {
+    expect(getSprintPointsForPosition(position)).toBe(expected);
   });
 });
 
@@ -85,5 +109,18 @@ describe("calculateRacePoints", () => {
 
   it("returns an empty record for an empty result", () => {
     expect(calculateRacePoints([])).toEqual({});
+  });
+
+  it("uses event result entry positions and sprint scoring when requested", () => {
+    const points = calculateRacePoints(
+      [
+        { position: 1, driverId: "norris", teamId: "mclaren" },
+        { position: 9, driverId: "piastri", teamId: "mclaren" },
+      ],
+      "sprint",
+    );
+
+    expect(points.norris).toBe(8);
+    expect(points.piastri).toBe(0);
   });
 });

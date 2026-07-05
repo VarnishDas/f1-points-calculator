@@ -1,5 +1,13 @@
 export type RaceStatus = "completed" | "upcoming";
 
+export interface EventResultEntry {
+  position: number;
+  driverId: string;
+  teamId: string;
+  status?: string;
+  points?: number;
+}
+
 export interface Race {
   id: string;
   round: number;
@@ -7,10 +15,20 @@ export interface Race {
   circuit: string;
   date: string;
   status: RaceStatus;
+  hasSprint?: boolean;
   /**
-   * Ordered array of driver IDs by finishing position (1st to last).
-   * For completed races this is the actual result.
-   * For upcoming races this is the user's prediction (null until set).
+   * Official Grand Prix classification. This is generated data and should not
+   * be mutated by user actions.
    */
-  result: string[] | null;
+  grandPrixResult: EventResultEntry[] | null;
+  /**
+   * Official sprint classification for sprint weekends. Sprint prediction UI is
+   * intentionally out of scope.
+   */
+  sprintResult?: EventResultEntry[] | null;
+  /**
+   * Ordered sparse array of driver IDs by predicted Grand Prix finishing
+   * position. User actions only mutate this field.
+   */
+  prediction: string[] | null;
 }

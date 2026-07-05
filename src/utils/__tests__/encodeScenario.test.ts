@@ -17,7 +17,9 @@ function makeRace(partial: Partial<Race> & Pick<Race, "id" | "status">): Race {
     name: partial.id,
     circuit: "Circuit",
     date: "2026-01-01",
-    result: null,
+    grandPrixResult: null,
+    sprintResult: null,
+    prediction: null,
     ...partial,
   };
 }
@@ -27,7 +29,7 @@ describe("encodeScenario", () => {
     const race = makeRace({
       id: "china-2026",
       status: "upcoming",
-      result: ["norris", "piastri", "verstappen"],
+      prediction: ["norris", "piastri", "verstappen"],
     });
 
     const scenario = encodeScenario([race]);
@@ -44,8 +46,8 @@ describe("encodeScenario", () => {
 
   it("encodes multiple upcoming race predictions", () => {
     const races = [
-      makeRace({ id: "china-2026", status: "upcoming", result: ["norris", "piastri"] }),
-      makeRace({ id: "miami-2026", status: "upcoming", result: ["verstappen", "leclerc"] }),
+      makeRace({ id: "china-2026", status: "upcoming", prediction: ["norris", "piastri"] }),
+      makeRace({ id: "miami-2026", status: "upcoming", prediction: ["verstappen", "leclerc"] }),
     ];
 
     const scenario = encodeScenario(races);
@@ -64,7 +66,7 @@ describe("encodeScenario", () => {
   it("preserves exact positions including empty gaps in sparse predictions", () => {
     const sparse: string[] = [];
     sparse[4] = "norris";
-    const race = makeRace({ id: "china-2026", status: "upcoming", result: sparse });
+    const race = makeRace({ id: "china-2026", status: "upcoming", prediction: sparse });
 
     const scenario = encodeScenario([race]);
 
@@ -75,12 +77,16 @@ describe("encodeScenario", () => {
     const completed = makeRace({
       id: "bahrain-2026",
       status: "completed",
-      result: ["verstappen", "norris", "leclerc"],
+      grandPrixResult: [
+        { position: 1, driverId: "verstappen", teamId: "red-bull" },
+        { position: 2, driverId: "norris", teamId: "mclaren" },
+        { position: 3, driverId: "leclerc", teamId: "ferrari" },
+      ],
     });
     const upcoming = makeRace({
       id: "china-2026",
       status: "upcoming",
-      result: ["norris"],
+      prediction: ["norris"],
     });
 
     const scenario = encodeScenario([completed, upcoming]);
@@ -90,7 +96,7 @@ describe("encodeScenario", () => {
   });
 
   it("does not encode upcoming races with a null result", () => {
-    const empty = makeRace({ id: "china-2026", status: "upcoming", result: null });
+    const empty = makeRace({ id: "china-2026", status: "upcoming", prediction: null });
 
     const scenario = encodeScenario([empty]);
 
@@ -99,8 +105,8 @@ describe("encodeScenario", () => {
 
   it("is deterministic: identical inputs produce identical outputs", () => {
     const races = [
-      makeRace({ id: "china-2026", status: "upcoming", result: ["norris", "piastri"] }),
-      makeRace({ id: "miami-2026", status: "upcoming", result: ["verstappen"] }),
+      makeRace({ id: "china-2026", status: "upcoming", prediction: ["norris", "piastri"] }),
+      makeRace({ id: "miami-2026", status: "upcoming", prediction: ["verstappen"] }),
     ];
 
     const first = JSON.stringify(encodeScenario(races));
@@ -112,14 +118,14 @@ describe("encodeScenario", () => {
 
 describe("encodeScenarioHash", () => {
   it("produces a hash fragment starting with the scenario key when predictions exist", () => {
-    const race = makeRace({ id: "china-2026", status: "upcoming", result: ["norris"] });
+    const race = makeRace({ id: "china-2026", status: "upcoming", prediction: ["norris"] });
     const hash = encodeScenarioHash([race]);
 
     expect(hash.startsWith(`#${SCENARIO_HASH_KEY}=`)).toBe(true);
   });
 
   it("produces URL-safe base64 (no +, /, or padding) in the hash value", () => {
-    const race = makeRace({ id: "china-2026", status: "upcoming", result: ["norris"] });
+    const race = makeRace({ id: "china-2026", status: "upcoming", prediction: ["norris"] });
     const value = encodeScenarioHashValue([race]);
     const encoded = value.slice(`${SCENARIO_HASH_KEY}=`.length);
 
@@ -127,7 +133,7 @@ describe("encodeScenarioHash", () => {
   });
 
   it("returns an empty string when there are no predictions", () => {
-    const empty = makeRace({ id: "china-2026", status: "upcoming", result: null });
+    const empty = makeRace({ id: "china-2026", status: "upcoming", prediction: null });
     expect(encodeScenarioHash([empty])).toBe("");
     expect(encodeScenarioHashValue([empty])).toBe("");
   });

@@ -1,10 +1,10 @@
 import type { Driver } from "../types/driver";
-import type { Race } from "../types/race";
+import type { EventResultEntry, Race } from "../types/race";
 import type { DriverStanding, TeamStanding } from "../types/standings";
 import type { Team } from "../types/team";
 import type { ChampionshipCountbackEntry } from "./resolveTies";
 
-import { getPointsForPosition } from "./calculateRacePoints";
+import { getPointsForSessionPosition, type PointsSession } from "./calculateRacePoints";
 import { resolveChampionshipOrder } from "./resolveTies";
 
 export type StandingsRaceMode = "completedOnly" | "completedAndPredicted";
@@ -29,14 +29,94 @@ export interface StandingsResult {
   teams: TeamStanding[];
 }
 
-function shouldUseRace(race: Race, mode: StandingsRaceMode): boolean {
-  if (!race.result) return false;
-  if (mode === "completedAndPredicted") return true;
-  return race.status === "completed";
-}
-
 function incrementPositionCount(counts: number[], position: number): void {
   counts[position - 1] = (counts[position - 1] ?? 0) + 1;
+}
+
+function addClassificationEntry(
+  driverId: string,
+  teamId: string | undefined,
+  position: number,
+  points: number,
+  driverTotalPoints: Map<string, number>,
+  driverPositionCounts: Map<string, number[]>,
+  teamTotalPoints: Map<string, number>,
+  teamPositionCounts: Map<string, number[]>,
+): void {
+  if (!driverId || !Number.isInteger(position) || position < 1) return;
+
+  driverTotalPoints.set(
+    driverId,
+    (driverTotalPoints.get(driverId) ?? 0) + points,
+  );
+
+  let driverCounts = driverPositionCounts.get(driverId);
+  if (!driverCounts) {
+    driverCounts = [];
+    driverPositionCounts.set(driverId, driverCounts);
+  }
+  incrementPositionCount(driverCounts, position);
+
+  if (!teamId) return;
+
+  teamTotalPoints.set(teamId, (teamTotalPoints.get(teamId) ?? 0) + points);
+
+  let teamCounts = teamPositionCounts.get(teamId);
+  if (!teamCounts) {
+    teamCounts = [];
+    teamPositionCounts.set(teamId, teamCounts);
+  }
+  incrementPositionCount(teamCounts, position);
+}
+
+function addOfficialResult(
+  result: readonly EventResultEntry[] | null | undefined,
+  session: PointsSession,
+  driverTotalPoints: Map<string, number>,
+  driverPositionCounts: Map<string, number[]>,
+  teamTotalPoints: Map<string, number>,
+  teamPositionCounts: Map<string, number[]>,
+): void {
+  if (!result) return;
+
+  for (const entry of result) {
+    addClassificationEntry(
+      entry.driverId,
+      entry.teamId,
+      entry.position,
+      entry.points ?? getPointsForSessionPosition(entry.position, session),
+      driverTotalPoints,
+      driverPositionCounts,
+      teamTotalPoints,
+      teamPositionCounts,
+    );
+  }
+}
+
+function addPredictionResult(
+  prediction: readonly string[] | null,
+  driverToTeam: ReadonlyMap<string, string>,
+  driverTotalPoints: Map<string, number>,
+  driverPositionCounts: Map<string, number[]>,
+  teamTotalPoints: Map<string, number>,
+  teamPositionCounts: Map<string, number[]>,
+): void {
+  if (!prediction) return;
+
+  prediction.forEach((driverId, index) => {
+    if (!driverId || !driverToTeam.has(driverId)) return;
+    const position = index + 1;
+    addClassificationEntry(
+      driverId,
+      driverToTeam.get(driverId),
+      position,
+      getPointsForSessionPosition(position, "grandPrix"),
+      driverTotalPoints,
+      driverPositionCounts,
+      teamTotalPoints,
+      teamPositionCounts,
+    );
+  });
 }
 
 export function aggregateChampionshipEntries(
@@ -54,38 +134,33 @@ export function aggregateChampionshipEntries(
   const teamPositionCounts = new Map<string, number[]>();
 
   for (const race of races) {
-    if (!shouldUseRace(race, mode)) continue;
+    addOfficialResult(
+      race.grandPrixResult,
+      "grandPrix",
+      driverTotalPoints,
+      driverPositionCounts,
+      teamTotalPoints,
+      teamPositionCounts,
+    );
+    addOfficialResult(
+      race.sprintResult,
+      "sprint",
+      driverTotalPoints,
+      driverPositionCounts,
+      teamTotalPoints,
+      teamPositionCounts,
+    );
 
-    race.result?.forEach((driverId, index) => {
-      if (!driverId || !driverToTeam.has(driverId)) return;
-
-      const position = index + 1;
-      const points = getPointsForPosition(position);
-
-      driverTotalPoints.set(
-        driverId,
-        (driverTotalPoints.get(driverId) ?? 0) + points,
+    if (mode === "completedAndPredicted" && race.status === "upcoming") {
+      addPredictionResult(
+        race.prediction,
+        driverToTeam,
+        driverTotalPoints,
+        driverPositionCounts,
+        teamTotalPoints,
+        teamPositionCounts,
       );
-
-      let driverCounts = driverPositionCounts.get(driverId);
-      if (!driverCounts) {
-        driverCounts = [];
-        driverPositionCounts.set(driverId, driverCounts);
-      }
-      incrementPositionCount(driverCounts, position);
-
-      const teamId = driverToTeam.get(driverId);
-      if (teamId === undefined) return;
-
-      teamTotalPoints.set(teamId, (teamTotalPoints.get(teamId) ?? 0) + points);
-
-      let teamCounts = teamPositionCounts.get(teamId);
-      if (!teamCounts) {
-        teamCounts = [];
-        teamPositionCounts.set(teamId, teamCounts);
-      }
-      incrementPositionCount(teamCounts, position);
-    });
+    }
   }
 
   return {

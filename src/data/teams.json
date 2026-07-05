@@ -1,12 +1,79 @@
 [
-  { "id": "mclaren", "name": "McLaren", "fullName": "McLaren Formula 1 Team", "color": "#FF8000" },
-  { "id": "ferrari", "name": "Ferrari", "fullName": "Scuderia Ferrari", "color": "#DC0000" },
-  { "id": "red-bull", "name": "Red Bull Racing", "fullName": "Oracle Red Bull Racing", "color": "#3671C6" },
-  { "id": "mercedes", "name": "Mercedes", "fullName": "Mercedes-AMG Petronas F1 Team", "color": "#00D2BE" },
-  { "id": "aston-martin", "name": "Aston Martin", "fullName": "Aston Martin Aramco F1 Team", "color": "#229971" },
-  { "id": "alpine", "name": "Alpine", "fullName": "BWT Alpine F1 Team", "color": "#0093CC" },
-  { "id": "williams", "name": "Williams", "fullName": "Atlassian Williams Racing", "color": "#005AFF" },
-  { "id": "racing-bulls", "name": "Racing Bulls", "fullName": "Visa Cash App Racing Bulls", "color": "#6692FF" },
-  { "id": "haas", "name": "Haas", "fullName": "MoneyGram Haas F1 Team", "color": "#B6BABD" },
-  { "id": "audi", "name": "Audi", "fullName": "Audi F1 Team", "color": "#BB0A1E" }
+  {
+    "id": "alpine",
+    "sourceId": "alpine",
+    "name": "Alpine",
+    "fullName": "BWT Alpine F1 Team",
+    "color": "#0093CC"
+  },
+  {
+    "id": "aston-martin",
+    "sourceId": "aston_martin",
+    "name": "Aston Martin",
+    "fullName": "Aston Martin Aramco F1 Team",
+    "color": "#229971"
+  },
+  {
+    "id": "audi",
+    "sourceId": "audi",
+    "name": "Audi",
+    "fullName": "Audi F1 Team",
+    "color": "#BB0A1E"
+  },
+  {
+    "id": "cadillac",
+    "sourceId": "cadillac",
+    "name": "Cadillac F1 Team",
+    "fullName": "Cadillac F1 Team",
+    "color": "#737373"
+  },
+  {
+    "id": "ferrari",
+    "sourceId": "ferrari",
+    "name": "Ferrari",
+    "fullName": "Scuderia Ferrari",
+    "color": "#DC0000"
+  },
+  {
+    "id": "haas",
+    "sourceId": "haas",
+    "name": "Haas",
+    "fullName": "MoneyGram Haas F1 Team",
+    "color": "#B6BABD"
+  },
+  {
+    "id": "mclaren",
+    "sourceId": "mclaren",
+    "name": "McLaren",
+    "fullName": "McLaren Formula 1 Team",
+    "color": "#FF8000"
+  },
+  {
+    "id": "mercedes",
+    "sourceId": "mercedes",
+    "name": "Mercedes",
+    "fullName": "Mercedes-AMG Petronas F1 Team",
+    "color": "#00D2BE"
+  },
+  {
+    "id": "racing-bulls",
+    "sourceId": "rb",
+    "name": "Racing Bulls",
+    "fullName": "Visa Cash App Racing Bulls",
+    "color": "#6692FF"
+  },
+  {
+    "id": "red-bull",
+    "sourceId": "red_bull",
+    "name": "Red Bull Racing",
+    "fullName": "Oracle Red Bull Racing",
+    "color": "#3671C6"
+  },
+  {
+    "id": "williams",
+    "sourceId": "williams",
+    "name": "Williams",
+    "fullName": "Atlassian Williams Racing",
+    "color": "#005AFF"
+  }
 ]

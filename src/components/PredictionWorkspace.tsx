@@ -86,7 +86,7 @@ export default function PredictionWorkspace({
     }
 
     const nextOrder = placeDriverAtPredictionPosition(
-      targetRace.result,
+      targetRace.prediction,
       active.driverId,
       over.index,
     );

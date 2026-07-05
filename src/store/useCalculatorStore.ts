@@ -26,7 +26,13 @@ export interface CalculatorState {
 function cloneRaces(races: Race[]): Race[] {
   return races.map((race) => ({
     ...race,
-    result: race.result ? race.result.slice() : null,
+    grandPrixResult: race.grandPrixResult
+      ? race.grandPrixResult.map((entry) => ({ ...entry }))
+      : null,
+    sprintResult: race.sprintResult
+      ? race.sprintResult.map((entry) => ({ ...entry }))
+      : race.sprintResult,
+    prediction: race.prediction ? race.prediction.slice() : null,
   }));
 }
 
@@ -41,7 +47,7 @@ export const useCalculatorStore = create<CalculatorState>()((set) => ({
       if (!race || race.status !== "upcoming") return state;
       return {
         races: state.races.map((r) =>
-          r.id === raceId ? { ...r, result: orderedDriverIds.slice() } : r,
+          r.id === raceId ? { ...r, prediction: orderedDriverIds.slice() } : r,
         ),
       };
     }),
@@ -49,9 +55,9 @@ export const useCalculatorStore = create<CalculatorState>()((set) => ({
   clearPredictionPosition: (raceId, positionIndex) =>
     set((state) => {
       const race = state.races.find((r) => r.id === raceId);
-      if (!race || race.status !== "upcoming" || !race.result) return state;
+      if (!race || race.status !== "upcoming" || !race.prediction) return state;
 
-      const nextResult = race.result.slice();
+      const nextResult = race.prediction.slice();
       delete nextResult[positionIndex];
       while (nextResult.length > 0 && nextResult[nextResult.length - 1] === undefined) {
         nextResult.length -= 1;
@@ -59,7 +65,9 @@ export const useCalculatorStore = create<CalculatorState>()((set) => ({
 
       return {
         races: state.races.map((r) =>
-          r.id === raceId ? { ...r, result: nextResult.length ? nextResult : null } : r,
+          r.id === raceId
+            ? { ...r, prediction: nextResult.length ? nextResult : null }
+            : r,
         ),
       };
     }),
@@ -71,7 +79,7 @@ export const useCalculatorStore = create<CalculatorState>()((set) => ({
 
         const entries = predictions[race.id];
         if (!entries || entries.length === 0) {
-          return { ...race, result: null };
+          return { ...race, prediction: null };
         }
 
         const nextResult: string[] = [];
@@ -82,14 +90,14 @@ export const useCalculatorStore = create<CalculatorState>()((set) => ({
           nextResult.length -= 1;
         }
 
-        return { ...race, result: nextResult.length ? nextResult : null };
+        return { ...race, prediction: nextResult.length ? nextResult : null };
       }),
     })),
 
   resetPredictions: () =>
     set((state) => ({
       races: state.races.map((r) =>
-        r.status === "upcoming" ? { ...r, result: null } : r,
+        r.status === "upcoming" ? { ...r, prediction: null } : r,
       ),
     })),
 }));

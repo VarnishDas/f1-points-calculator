@@ -3,12 +3,14 @@ import { describe, it, expect } from "vitest";
 import { calculateProjectedStandings } from "../calculateProjectedStandings";
 import { calculateStandings } from "../calculateStandings";
 import { drivers, races, teams } from "../../data";
+import type { Driver } from "../../types/driver";
 import type { Race } from "../../types/race";
+import type { Team } from "../../types/team";
 
 describe("calculateProjectedStandings", () => {
   it("matches completed-only standings when no predictions exist", () => {
     const noPredictions: Race[] = races.map((r) =>
-      r.status === "upcoming" ? { ...r, result: null } : r,
+      r.status === "upcoming" ? { ...r, prediction: null } : r,
     );
 
     const projected = calculateProjectedStandings(noPredictions, drivers, teams);
@@ -32,7 +34,7 @@ describe("calculateProjectedStandings", () => {
 
     const predicted: Race[] = races.map((r) =>
       r.id === upcoming.id
-        ? { ...r, result: ["norris", "piastri", "verstappen"] }
+        ? { ...r, prediction: ["norris", "piastri", "verstappen"] }
         : r,
     );
 
@@ -49,16 +51,57 @@ describe("calculateProjectedStandings", () => {
   });
 
   it("does not mutate the input races array or race results", () => {
-    const snapshot: Race[] = races.map((r) => ({ ...r, result: r.result ? [...r.result] : null }));
+    const snapshot: Race[] = races.map((r) => ({
+      ...r,
+      grandPrixResult: r.grandPrixResult ? r.grandPrixResult.map((entry) => ({ ...entry })) : null,
+      sprintResult: r.sprintResult ? r.sprintResult.map((entry) => ({ ...entry })) : r.sprintResult,
+      prediction: r.prediction ? [...r.prediction] : null,
+    }));
 
     calculateProjectedStandings(races, drivers, teams);
 
-    expect(races.map((r) => r.result)).toEqual(snapshot.map((r) => r.result));
+    expect(races).toEqual(snapshot);
   });
 
   it("returns a standing for every driver and team", () => {
     const projected = calculateProjectedStandings(races, drivers, teams);
-    expect(projected.drivers).toHaveLength(20);
-    expect(projected.teams).toHaveLength(10);
+    expect(projected.drivers).toHaveLength(drivers.length);
+    expect(projected.teams).toHaveLength(teams.length);
+  });
+
+  it("scores prediction constructor points from the current driver teamId", () => {
+    const testDrivers: Driver[] = [
+      {
+        id: "reserve",
+        number: null,
+        code: "RES",
+        firstName: "Reserve",
+        lastName: "Driver",
+        teamId: "team-a",
+        country: "X",
+      },
+    ];
+    const testTeams: Team[] = [
+      { id: "team-a", name: "Team A", fullName: "Team A", color: "#111111" },
+      { id: "team-b", name: "Team B", fullName: "Team B", color: "#222222" },
+    ];
+    const testRaces: Race[] = [
+      {
+        id: "future",
+        round: 1,
+        name: "Future",
+        circuit: "Test",
+        date: "2026-01-01",
+        status: "upcoming",
+        grandPrixResult: null,
+        sprintResult: null,
+        prediction: ["reserve"],
+      },
+    ];
+
+    const standings = calculateProjectedStandings(testRaces, testDrivers, testTeams);
+
+    expect(standings.teams.find((entry) => entry.teamId === "team-a")?.points).toBe(25);
+    expect(standings.teams.find((entry) => entry.teamId === "team-b")?.points).toBe(0);
   });
 });
