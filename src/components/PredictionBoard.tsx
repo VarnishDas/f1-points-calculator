@@ -40,7 +40,7 @@ export default function PredictionBoard({
   const teamById = new Map(teams.map((team) => [team.id, team]));
 
   return (
-    <section className="min-h-0 rounded-md border border-white/10 bg-neutral-950/75 shadow-2xl shadow-black/25">
+    <section className="flex min-h-0 flex-1 flex-col rounded-md border border-white/10 bg-neutral-950/75 shadow-2xl shadow-black/25">
       <div className="flex flex-col gap-2 border-b border-white/10 px-3 py-2.5 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-4">
           <h2 className="text-sm font-black uppercase tracking-[0.12em] text-neutral-100">
@@ -57,7 +57,7 @@ export default function PredictionBoard({
         </div>
       </div>
 
-      <div className="overflow-x-auto p-2.5">
+      <div className="custom-scrollbar min-h-0 flex-1 overflow-auto p-2.5">
         <div
           className="grid w-max gap-1"
           style={{

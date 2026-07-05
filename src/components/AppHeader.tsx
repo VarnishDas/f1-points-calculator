@@ -4,12 +4,12 @@ type AppHeaderProps = {
 
 export default function AppHeader({ onReset }: AppHeaderProps) {
   return (
-    <header className="flex flex-col gap-3 border-b border-white/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between lg:px-6">
+    <header className="flex shrink-0 flex-col gap-2 border-b border-white/10 px-3 py-2 sm:flex-row sm:items-center sm:justify-between lg:px-4">
       <div className="min-w-0">
-        <h1 className="text-xl font-black tracking-tight text-white sm:text-2xl">
+        <h1 className="text-base font-black tracking-tight text-white sm:text-lg">
           Formula 1 Points Calculator
         </h1>
-        <p className="mt-1 truncate text-sm text-neutral-500 sm:text-base">
+        <p className="mt-0.5 truncate text-xs text-neutral-500">
           Drag drivers to simulate the championship
         </p>
       </div>
@@ -18,7 +18,7 @@ export default function AppHeader({ onReset }: AppHeaderProps) {
         <button
           type="button"
           onClick={onReset}
-          className="inline-flex h-10 items-center gap-2 rounded-md border border-white/10 bg-white/[0.03] px-4 text-sm font-semibold text-neutral-200 transition hover:border-white/20 hover:bg-white/[0.07]"
+          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.03] px-3 text-xs font-semibold text-neutral-200 transition hover:border-white/20 hover:bg-white/[0.07]"
         >
           <span aria-hidden="true" className="text-base leading-none">
             ↺
@@ -27,7 +27,7 @@ export default function AppHeader({ onReset }: AppHeaderProps) {
         </button>
         <button
           type="button"
-          className="inline-flex h-10 items-center gap-2 rounded-md bg-red-600 px-4 text-sm font-bold text-white shadow-[0_0_22px_rgba(220,38,38,0.25)] transition hover:bg-red-500"
+          className="inline-flex h-8 items-center gap-1.5 rounded-md bg-red-600 px-3 text-xs font-bold text-white shadow-[0_0_22px_rgba(220,38,38,0.25)] transition hover:bg-red-500"
           aria-label="Share scenario placeholder"
         >
           <span aria-hidden="true" className="text-base leading-none">
