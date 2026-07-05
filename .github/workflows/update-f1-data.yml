@@ -44,7 +44,7 @@ jobs:
         run: pnpm build
 
       - name: Create pull request
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           commit-message: "chore: update F1 data"
           title: "chore: update F1 data"
