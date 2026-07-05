@@ -61,67 +61,79 @@ export default function PredictionBoard({
         </div>
       </div>
 
-      <div className="custom-scrollbar overflow-x-auto p-2.5 lg:min-h-0 lg:flex-1 lg:overflow-auto">
-        <div
-          className="grid w-max gap-1"
-          style={{
-            gridTemplateColumns: `2rem repeat(${columns.length}, 5.5rem)`,
-          }}
-        >
-          <div className="sticky left-0 z-20 rounded border border-white/[0.06] bg-neutral-950" />
-          {columns.map(({ id, race, session }) => {
-            const isSprint = session === "sprint";
-            const prediction = isSprint ? race.sprintPrediction : race.prediction;
-            const predicted = race.status === "upcoming" && !!prediction?.length;
-            const completed = isSprint ? !!race.sprintResult?.length : race.status === "completed";
-            return (
-              <div
-                key={id}
-                className={
-                  predicted
-                    ? "rounded border border-red-500/50 bg-red-500/10 px-1 py-1.5 text-center"
-                    : completed
-                      ? "rounded border border-emerald-500/30 bg-emerald-500/10 px-1 py-1.5 text-center"
-                      : "rounded border border-white/10 bg-white/[0.025] px-1 py-1.5 text-center"
-                }
-                title={isSprint ? `${race.name} Sprint` : race.name}
-              >
-                <div className="text-xs font-black text-neutral-100">
-                  R{race.round}
-                </div>
-                <div className="mt-1 min-h-7 text-[10px] font-bold leading-tight text-neutral-400">
-                  <span className="block truncate">{formatRaceLabel(race.name)}</span>
-                  <span
-                    className={`block uppercase tracking-wide ${isSprint ? "text-sky-300" : "text-neutral-600"}`}
-                  >
-                    {isSprint ? "Sprint" : "GP"}
-                  </span>
-                </div>
-                <span
-                  className={
-                    predicted
-                      ? "mx-auto mt-1 block h-1.5 w-1.5 rounded-full bg-red-500"
-                      : completed
-                        ? "mx-auto mt-1 block h-1.5 w-1.5 rounded-full bg-emerald-500"
-                        : "mx-auto mt-1 block h-1.5 w-1.5 rounded-full bg-neutral-600"
-                  }
-                />
-              </div>
-            );
-          })}
-
+      <div className="custom-scrollbar flex items-start gap-1 overflow-y-auto overflow-x-hidden p-2.5 lg:min-h-0 lg:flex-1">
+        <div className="flex w-8 shrink-0 flex-col gap-1 bg-neutral-950">
+          <div className="h-[4.5rem] shrink-0 rounded border border-white/[0.06] bg-neutral-950" />
           {Array.from({ length: classificationSize }, (_, positionIndex) => (
-            <BoardRow
+            <div
               key={positionIndex}
-              positionIndex={positionIndex}
-              columns={columns}
-              driverById={driverById}
-              teamById={teamById}
-            />
+              className="grid h-11 shrink-0 place-items-center rounded border border-white/[0.06] bg-neutral-950 text-xs tabular-nums text-neutral-300 lg:h-8"
+            >
+              {positionIndex + 1}
+            </div>
           ))}
         </div>
-      </div>
 
+        <div className="custom-scrollbar min-w-0 flex-1 overflow-x-auto">
+          <div
+            className="grid w-max gap-1"
+            style={{
+              gridTemplateColumns: `repeat(${columns.length}, 5.5rem)`,
+            }}
+          >
+            {columns.map(({ id, race, session }) => {
+              const isSprint = session === "sprint";
+              const prediction = isSprint ? race.sprintPrediction : race.prediction;
+              const predicted = race.status === "upcoming" && !!prediction?.length;
+              const completed = isSprint ? !!race.sprintResult?.length : race.status === "completed";
+              return (
+                <div
+                  key={id}
+                  className={
+                    predicted
+                      ? "h-[4.5rem] rounded border border-red-500/50 bg-red-500/10 px-1 py-1.5 text-center"
+                      : completed
+                        ? "h-[4.5rem] rounded border border-emerald-500/30 bg-emerald-500/10 px-1 py-1.5 text-center"
+                        : "h-[4.5rem] rounded border border-white/10 bg-white/[0.025] px-1 py-1.5 text-center"
+                  }
+                  title={isSprint ? `${race.name} Sprint` : race.name}
+                >
+                  <div className="text-xs font-black text-neutral-100">
+                    R{race.round}
+                  </div>
+                  <div className="mt-1 min-h-7 text-[10px] font-bold leading-tight text-neutral-400">
+                    <span className="block truncate">{formatRaceLabel(race.name)}</span>
+                    <span
+                      className={`block uppercase tracking-wide ${isSprint ? "text-sky-300" : "text-neutral-600"}`}
+                    >
+                      {isSprint ? "Sprint" : "GP"}
+                    </span>
+                  </div>
+                  <span
+                    className={
+                      predicted
+                        ? "mx-auto mt-1 block h-1.5 w-1.5 rounded-full bg-red-500"
+                        : completed
+                          ? "mx-auto mt-1 block h-1.5 w-1.5 rounded-full bg-emerald-500"
+                          : "mx-auto mt-1 block h-1.5 w-1.5 rounded-full bg-neutral-600"
+                    }
+                  />
+                </div>
+              );
+            })}
+
+            {Array.from({ length: classificationSize }, (_, positionIndex) => (
+              <BoardRow
+                key={positionIndex}
+                positionIndex={positionIndex}
+                columns={columns}
+                driverById={driverById}
+                teamById={teamById}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
     </section>
   );
 }
@@ -136,9 +148,6 @@ type BoardRowProps = {
 function BoardRow({ positionIndex, columns, driverById, teamById }: BoardRowProps) {
   return (
     <>
-      <div className="sticky left-0 z-10 grid h-11 place-items-center rounded border border-white/[0.06] bg-neutral-950 text-xs tabular-nums text-neutral-300 lg:h-8">
-        {positionIndex + 1}
-      </div>
       {columns.map(({ id, race, session }) => {
         const isSprint = session === "sprint";
         const officialEntry =
