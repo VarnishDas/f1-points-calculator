@@ -13,8 +13,8 @@ export default function DashboardLayout({
   const [isStandingsOpen, setIsStandingsOpen] = useState(false);
 
   return (
-    <div className="grid min-h-0 flex-1 gap-3 overflow-hidden p-3 lg:grid-cols-[320px_minmax(0,1fr)]">
-      <div className="min-h-0 min-w-0 overflow-hidden lg:flex lg:flex-col">
+    <div className="grid flex-1 gap-3 p-3 lg:min-h-0 lg:grid-cols-[320px_minmax(0,1fr)] lg:overflow-hidden">
+      <div className="min-w-0 lg:flex lg:min-h-0 lg:flex-col lg:overflow-hidden">
         <button
           type="button"
           onClick={() => setIsStandingsOpen((open) => !open)}
@@ -34,7 +34,7 @@ export default function DashboardLayout({
         <div
           className={
             isStandingsOpen
-              ? "block w-full max-h-[45svh] overflow-hidden lg:flex lg:h-full lg:min-h-0 lg:max-h-none"
+              ? "block w-full lg:flex lg:h-full lg:min-h-0"
               : "hidden w-full lg:flex lg:h-full lg:min-h-0"
           }
         >

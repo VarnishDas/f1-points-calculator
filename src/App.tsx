@@ -30,7 +30,7 @@ function App() {
   );
 
   return (
-    <main className="flex h-screen min-h-0 flex-col overflow-hidden bg-neutral-950 text-neutral-100">
+    <main className="flex min-h-screen flex-col overflow-y-auto bg-neutral-950 text-neutral-100 lg:h-screen lg:min-h-0 lg:overflow-hidden">
       <AppHeader onReset={resetPredictions} />
       <DashboardLayout
         standings={

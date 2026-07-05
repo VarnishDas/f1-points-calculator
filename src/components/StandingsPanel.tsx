@@ -26,7 +26,7 @@ export default function StandingsPanel({
   const teamById = new Map(teams.map((team) => [team.id, team]));
 
   return (
-    <aside className="flex h-full max-h-full min-h-0 w-full flex-col rounded-md border border-white/10 bg-neutral-950/75 shadow-2xl shadow-black/30">
+    <aside className="flex w-full flex-col rounded-md border border-white/10 bg-neutral-950/75 shadow-2xl shadow-black/30 lg:h-full lg:max-h-full lg:min-h-0">
       <div className="hidden items-center justify-between gap-3 border-b border-white/10 px-3 py-3 lg:flex">
         <h2 className="text-sm font-black uppercase tracking-[0.12em] text-neutral-100">
           Standings
@@ -63,7 +63,7 @@ export default function StandingsPanel({
         </div>
       </div>
 
-      <div className="custom-scrollbar stable-scrollbar-gutter min-h-0 flex-1 overflow-x-auto overflow-y-scroll">
+      <div className="custom-scrollbar stable-scrollbar-gutter max-h-[24.5rem] overflow-x-auto overflow-y-auto lg:min-h-0 lg:max-h-none lg:flex-1">
         {mode === "drivers" ? (
           <table className="w-full border-collapse text-xs">
             <thead className="sticky top-0 z-10 bg-neutral-950">

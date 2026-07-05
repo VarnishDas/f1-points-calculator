@@ -20,7 +20,7 @@ export default function DriverPool({ drivers, teams }: DriverPoolProps) {
           Drag a driver into any editable race cell
         </p>
       </div>
-      <div className="custom-scrollbar grid max-h-36 grid-cols-[repeat(auto-fill,minmax(5rem,1fr))] gap-1.5 overflow-auto p-2 sm:grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] xl:max-h-none xl:overflow-visible">
+      <div className="custom-scrollbar grid grid-cols-[repeat(auto-fill,minmax(5rem,1fr))] gap-1.5 overflow-visible p-2 sm:grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] lg:max-h-36 lg:overflow-auto xl:max-h-none xl:overflow-visible">
         {drivers.map((driver) => (
           <DriverTile
             key={driver.id}

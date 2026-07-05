@@ -87,7 +87,7 @@ export default function PredictionWorkspace({
   };
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-col gap-3 overflow-hidden">
+    <div className="flex min-w-0 flex-col gap-3 lg:min-h-0 lg:overflow-hidden">
       <DndContext
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
