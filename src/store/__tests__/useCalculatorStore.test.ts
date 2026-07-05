@@ -7,6 +7,7 @@ import {
 import { calculateStandings } from "../../engine/calculateStandings";
 import { drivers as staticDrivers, races as staticRaces, teams as staticTeams } from "../../data";
 import { RACE_CLASSIFICATION_SIZE } from "../../constants/race";
+import type { ScenarioPredictions } from "../../utils/encodeScenario";
 
 describe("useCalculatorStore", () => {
   beforeEach(() => {
@@ -199,5 +200,130 @@ describe("selectTeamStandings", () => {
     const state = useCalculatorStore.getState();
     const expected = calculateStandings(state.races, state.drivers, state.teams).teams;
     expect(selectTeamStandings(state)).toEqual(expected);
+  });
+});
+
+describe("applyScenario", () => {
+  beforeEach(() => {
+    useCalculatorStore.getState().resetPredictions();
+  });
+
+  it("applies decoded predictions to upcoming races", () => {
+    const upcoming = useCalculatorStore
+      .getState()
+      .races.find((r) => r.status === "upcoming");
+    if (!upcoming) throw new Error("expected at least one upcoming race");
+
+    const predictions: ScenarioPredictions = {
+      [upcoming.id]: [
+        { p: 1, d: "norris" },
+        { p: 2, d: "piastri" },
+        { p: 3, d: "verstappen" },
+      ],
+    };
+
+    useCalculatorStore.getState().applyScenario(predictions);
+
+    const updated = useCalculatorStore
+      .getState()
+      .races.find((r) => r.id === upcoming.id);
+    expect(updated?.result).toEqual(["norris", "piastri", "verstappen"]);
+  });
+
+  it("preserves empty gaps when applying sparse predictions", () => {
+    const upcoming = useCalculatorStore
+      .getState()
+      .races.find((r) => r.status === "upcoming");
+    if (!upcoming) throw new Error("expected at least one upcoming race");
+
+    const predictions: ScenarioPredictions = {
+      [upcoming.id]: [{ p: 5, d: "norris" }],
+    };
+
+    useCalculatorStore.getState().applyScenario(predictions);
+
+    const updated = useCalculatorStore
+      .getState()
+      .races.find((r) => r.id === upcoming.id);
+    expect(updated?.result).toHaveLength(5);
+    expect(updated?.result?.[0]).toBeUndefined();
+    expect(updated?.result?.[4]).toBe("norris");
+  });
+
+  it("clears unrelated upcoming races so the scenario is authoritative", () => {
+    const races = useCalculatorStore.getState().races;
+    const firstUpcoming = races.find((r) => r.status === "upcoming");
+    const secondUpcoming = races.find((r) => r.status === "upcoming" && r.id !== firstUpcoming?.id);
+    if (!firstUpcoming || !secondUpcoming) throw new Error("expected at least two upcoming races");
+
+    useCalculatorStore
+      .getState()
+      .updatePrediction(secondUpcoming.id, ["norris", "piastri"]);
+
+    const predictions: ScenarioPredictions = {
+      [firstUpcoming.id]: [{ p: 1, d: "verstappen" }],
+    };
+
+    useCalculatorStore.getState().applyScenario(predictions);
+
+    const first = useCalculatorStore.getState().races.find((r) => r.id === firstUpcoming.id);
+    const second = useCalculatorStore.getState().races.find((r) => r.id === secondUpcoming.id);
+    expect(first?.result).toEqual(["verstappen"]);
+    expect(second?.result).toBeNull();
+  });
+
+  it("does not modify completed races", () => {
+    const completed = useCalculatorStore
+      .getState()
+      .races.find((r) => r.status === "completed");
+    if (!completed) throw new Error("expected at least one completed race");
+    const originalResult = completed.result ? [...completed.result] : null;
+
+    const predictions: ScenarioPredictions = {
+      [completed.id]: [{ p: 1, d: "norris" }],
+    };
+
+    useCalculatorStore.getState().applyScenario(predictions);
+
+    const after = useCalculatorStore
+      .getState()
+      .races.find((r) => r.id === completed.id);
+    expect(after?.status).toBe("completed");
+    expect(after?.result).toEqual(originalResult);
+  });
+
+  it("resets all upcoming races when given an empty scenario", () => {
+    const upcoming = useCalculatorStore
+      .getState()
+      .races.find((r) => r.status === "upcoming");
+    if (!upcoming) throw new Error("expected at least one upcoming race");
+
+    useCalculatorStore.getState().updatePrediction(upcoming.id, ["norris", "piastri"]);
+
+    useCalculatorStore.getState().applyScenario({});
+
+    const after = useCalculatorStore
+      .getState()
+      .races.find((r) => r.id === upcoming.id);
+    expect(after?.result).toBeNull();
+  });
+
+  it("supports the maximum classified finishing position", () => {
+    const upcoming = useCalculatorStore
+      .getState()
+      .races.find((r) => r.status === "upcoming");
+    if (!upcoming) throw new Error("expected at least one upcoming race");
+
+    const predictions: ScenarioPredictions = {
+      [upcoming.id]: [{ p: RACE_CLASSIFICATION_SIZE, d: "norris" }],
+    };
+
+    useCalculatorStore.getState().applyScenario(predictions);
+
+    const updated = useCalculatorStore
+      .getState()
+      .races.find((r) => r.id === upcoming.id);
+    expect(updated?.result).toHaveLength(RACE_CLASSIFICATION_SIZE);
+    expect(updated?.result?.[RACE_CLASSIFICATION_SIZE - 1]).toBe("norris");
   });
 });
