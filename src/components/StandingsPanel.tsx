@@ -65,7 +65,7 @@ export default function StandingsPanel({
         </div>
       </div>
 
-      <div className="custom-scrollbar max-h-[60vh] overflow-x-auto overflow-y-auto sm:max-h-[24.5rem] lg:min-h-0 lg:max-h-none lg:flex-1 lg:stable-scrollbar-gutter">
+      <div className="custom-scrollbar max-h-[22rem] overflow-x-auto overflow-y-auto lg:min-h-0 lg:max-h-none lg:flex-1 lg:stable-scrollbar-gutter">
         {mode === "drivers" ? (
           <table className="w-full border-collapse text-xs">
             <thead className="sticky top-0 z-10 bg-neutral-950">
