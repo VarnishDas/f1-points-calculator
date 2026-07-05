@@ -1,7 +1,7 @@
 import type { Driver } from "../types/driver";
 import type { Race } from "../types/race";
 import type { Team } from "../types/team";
-import { POINTS_TABLE } from "../engine/calculateRacePoints";
+import { RACE_CLASSIFICATION_SIZE } from "../constants/race";
 import { sortRacesByRound } from "./raceUtils";
 import PredictionCell from "./PredictionCell";
 
@@ -38,11 +38,10 @@ export default function PredictionBoard({
   const sortedRaces = sortRacesByRound(races);
   const driverById = new Map(drivers.map((driver) => [driver.id, driver]));
   const teamById = new Map(teams.map((team) => [team.id, team]));
-  const rowCount = POINTS_TABLE.length;
 
   return (
     <section className="min-h-0 rounded-md border border-white/10 bg-neutral-950/75 shadow-2xl shadow-black/25">
-      <div className="flex flex-col gap-2 border-b border-white/10 px-4 py-3 xl:flex-row xl:items-center xl:justify-between">
+      <div className="flex flex-col gap-2 border-b border-white/10 px-3 py-2.5 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-4">
           <h2 className="text-sm font-black uppercase tracking-[0.12em] text-neutral-100">
             Prediction Board
@@ -58,11 +57,11 @@ export default function PredictionBoard({
         </div>
       </div>
 
-      <div className="overflow-x-auto p-3">
+      <div className="overflow-x-auto p-2.5">
         <div
           className="grid w-max gap-1"
           style={{
-            gridTemplateColumns: `2.25rem repeat(${sortedRaces.length}, 4.55rem)`,
+            gridTemplateColumns: `2rem repeat(${sortedRaces.length}, 4rem)`,
           }}
         >
           <div className="sticky left-0 z-20 rounded border border-white/[0.06] bg-neutral-950" />
@@ -73,10 +72,10 @@ export default function PredictionBoard({
                 key={race.id}
                 className={
                   predicted
-                    ? "rounded border border-red-500/50 bg-red-500/10 px-1 py-2 text-center"
+                    ? "rounded border border-red-500/50 bg-red-500/10 px-1 py-1.5 text-center"
                     : race.status === "completed"
-                      ? "rounded border border-emerald-500/30 bg-emerald-500/10 px-1 py-2 text-center"
-                      : "rounded border border-white/10 bg-white/[0.025] px-1 py-2 text-center"
+                      ? "rounded border border-emerald-500/30 bg-emerald-500/10 px-1 py-1.5 text-center"
+                      : "rounded border border-white/10 bg-white/[0.025] px-1 py-1.5 text-center"
                 }
                 title={race.name}
               >
@@ -99,7 +98,7 @@ export default function PredictionBoard({
             );
           })}
 
-          {Array.from({ length: rowCount }, (_, positionIndex) => (
+          {Array.from({ length: RACE_CLASSIFICATION_SIZE }, (_, positionIndex) => (
             <BoardRow
               key={positionIndex}
               positionIndex={positionIndex}
@@ -111,7 +110,7 @@ export default function PredictionBoard({
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 border-t border-white/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 border-t border-white/10 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-neutral-500">
           Empty upcoming cells are ignored until a driver is assigned.
         </p>
@@ -146,7 +145,7 @@ type BoardRowProps = {
 function BoardRow({ positionIndex, races, driverById, teamById }: BoardRowProps) {
   return (
     <>
-      <div className="sticky left-0 z-10 grid h-9 place-items-center rounded border border-white/[0.06] bg-neutral-950 text-sm tabular-nums text-neutral-300">
+      <div className="sticky left-0 z-10 grid h-8 place-items-center rounded border border-white/[0.06] bg-neutral-950 text-xs tabular-nums text-neutral-300">
         {positionIndex + 1}
       </div>
       {races.map((race) => {

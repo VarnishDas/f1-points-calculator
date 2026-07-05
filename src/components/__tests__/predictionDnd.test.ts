@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { RACE_CLASSIFICATION_SIZE } from "../../constants/race";
 import { placeDriverAtPredictionPosition } from "../predictionDnd";
 
 describe("placeDriverAtPredictionPosition", () => {
@@ -9,6 +10,18 @@ describe("placeDriverAtPredictionPosition", () => {
     expect(result).toHaveLength(5);
     expect(result[0]).toBeUndefined();
     expect(result[4]).toBe("norris");
+  });
+
+  it("supports the final classified finishing position", () => {
+    const result = placeDriverAtPredictionPosition(
+      null,
+      "norris",
+      RACE_CLASSIFICATION_SIZE - 1,
+    );
+
+    expect(RACE_CLASSIFICATION_SIZE).toBe(20);
+    expect(result).toHaveLength(20);
+    expect(result[19]).toBe("norris");
   });
 
   it("moves an existing driver without compacting empty positions", () => {

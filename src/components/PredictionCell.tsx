@@ -35,10 +35,10 @@ export default function PredictionCell({
       ref={setNodeRef}
       className={
         isOver
-          ? "grid h-9 place-items-center rounded border border-amber-400/70 bg-amber-400/10"
+          ? "grid h-8 place-items-center rounded border border-amber-400/70 bg-amber-400/10"
           : editable
-            ? "grid h-9 place-items-center rounded border border-dashed border-white/15 bg-black/20"
-            : "grid h-9 place-items-center rounded border border-white/[0.06] bg-white/[0.025]"
+            ? "grid h-8 place-items-center rounded border border-dashed border-white/15 bg-black/20"
+            : "grid h-8 place-items-center rounded border border-white/[0.06] bg-white/[0.025]"
       }
     >
       {driver ? (

@@ -1,0 +1,1 @@
+export const RACE_CLASSIFICATION_SIZE = 20;

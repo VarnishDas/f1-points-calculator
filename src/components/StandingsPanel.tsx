@@ -25,7 +25,7 @@ export default function StandingsPanel({
 
   return (
     <aside className="min-h-0 rounded-md border border-white/10 bg-neutral-950/75 shadow-2xl shadow-black/30">
-      <div className="hidden items-center justify-between gap-3 border-b border-white/10 px-4 py-4 lg:flex">
+      <div className="hidden items-center justify-between gap-3 border-b border-white/10 px-3 py-3 lg:flex">
         <h2 className="text-sm font-black uppercase tracking-[0.12em] text-neutral-100">
           Standings
         </h2>
@@ -34,15 +34,15 @@ export default function StandingsPanel({
         </span>
       </div>
 
-      <div className="border-b border-white/10 p-3">
+      <div className="border-b border-white/10 p-2">
         <div className="grid grid-cols-2 rounded-md border border-white/10 bg-black/25 p-1">
           <button
             type="button"
             onClick={() => setMode("drivers")}
             className={
               mode === "drivers"
-                ? "rounded bg-amber-500/10 px-3 py-2 text-xs font-black text-amber-400 ring-1 ring-amber-500/50"
-                : "rounded px-3 py-2 text-xs font-bold text-neutral-500 transition hover:text-neutral-200"
+                ? "rounded bg-amber-500/10 px-2 py-1.5 text-[11px] font-black text-amber-400 ring-1 ring-amber-500/50"
+                : "rounded px-2 py-1.5 text-[11px] font-bold text-neutral-500 transition hover:text-neutral-200"
             }
           >
             Drivers
@@ -52,8 +52,8 @@ export default function StandingsPanel({
             onClick={() => setMode("constructors")}
             className={
               mode === "constructors"
-                ? "rounded bg-amber-500/10 px-3 py-2 text-xs font-black text-amber-400 ring-1 ring-amber-500/50"
-                : "rounded px-3 py-2 text-xs font-bold text-neutral-500 transition hover:text-neutral-200"
+                ? "rounded bg-amber-500/10 px-2 py-1.5 text-[11px] font-black text-amber-400 ring-1 ring-amber-500/50"
+                : "rounded px-2 py-1.5 text-[11px] font-bold text-neutral-500 transition hover:text-neutral-200"
             }
           >
             Constructors

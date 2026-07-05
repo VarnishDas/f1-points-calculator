@@ -126,12 +126,12 @@ function TileContent({
     <>
       <span
         aria-hidden="true"
-        className="absolute inset-y-2 left-2 w-1 rounded-full bg-[var(--team-color)]"
+        className="absolute inset-y-1.5 left-1.5 w-0.5 rounded-full bg-[var(--team-color)]"
       />
-      <span className="block pl-3 text-sm font-black tracking-[0.15em] text-white">
+      <span className="block pl-2.5 text-xs font-black tracking-[0.12em] text-white">
         {driver.code}
       </span>
-      <span className="mt-1 block truncate pl-3 text-[11px] font-semibold text-neutral-400">
+      <span className="mt-0.5 block truncate pl-2.5 text-[10px] font-semibold text-neutral-400">
         {team?.name ?? driver.teamId}
       </span>
     </>
@@ -140,12 +140,12 @@ function TileContent({
 
 function getTileClasses(variant: DriverTileVariant) {
   if (variant === "pool") {
-    return "relative min-h-14 min-w-28 touch-none select-none overflow-hidden rounded-md border border-white/10 bg-white/[0.035] px-3 py-2 text-left shadow-sm transition hover:border-white/20 hover:bg-white/[0.07] active:cursor-grabbing sm:min-w-32";
+    return "relative min-h-10 touch-none select-none overflow-hidden rounded border border-white/10 bg-white/[0.035] px-2 py-1.5 text-left shadow-sm transition hover:border-white/20 hover:bg-white/[0.07] active:cursor-grabbing";
   }
 
   if (variant === "overlay") {
-    return "relative grid h-8 w-16 select-none place-items-center overflow-hidden rounded border border-amber-400/50 bg-neutral-900 text-[11px] shadow-2xl shadow-black/40 ring-1 ring-amber-400/30";
+    return "relative grid h-8 w-14 select-none place-items-center overflow-hidden rounded border border-amber-400/50 bg-neutral-900 text-[11px] shadow-2xl shadow-black/40 ring-1 ring-amber-400/30";
   }
 
-  return "relative grid h-full w-full touch-none select-none place-items-center overflow-hidden rounded border border-white/10 bg-white/[0.06] text-[11px] shadow-sm transition hover:border-white/25 active:cursor-grabbing";
+  return "relative grid h-full w-full touch-none select-none place-items-center overflow-hidden rounded border border-white/10 bg-white/[0.06] text-[10px] shadow-sm transition hover:border-white/25 active:cursor-grabbing";
 }

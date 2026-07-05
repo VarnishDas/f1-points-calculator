@@ -6,6 +6,7 @@ import {
 } from "../useCalculatorStore";
 import { calculateStandings } from "../../engine/calculateStandings";
 import { drivers as staticDrivers, races as staticRaces, teams as staticTeams } from "../../data";
+import { RACE_CLASSIFICATION_SIZE } from "../../constants/race";
 
 describe("useCalculatorStore", () => {
   beforeEach(() => {
@@ -57,6 +58,23 @@ describe("useCalculatorStore", () => {
     expect(updated?.result).toHaveLength(5);
     expect(updated?.result?.[0]).toBeUndefined();
     expect(updated?.result?.[4]).toBe("norris");
+  });
+
+  it("updatePrediction preserves all 20 classified finishing positions", () => {
+    const upcoming = useCalculatorStore
+      .getState()
+      .races.find((r) => r.status === "upcoming");
+    if (!upcoming) throw new Error("expected at least one upcoming race");
+
+    const prediction: string[] = [];
+    prediction[RACE_CLASSIFICATION_SIZE - 1] = "norris";
+    useCalculatorStore.getState().updatePrediction(upcoming.id, prediction);
+
+    const updated = useCalculatorStore
+      .getState()
+      .races.find((r) => r.id === upcoming.id);
+    expect(updated?.result).toHaveLength(20);
+    expect(updated?.result?.[19]).toBe("norris");
   });
 
   it("updatePrediction does not modify completed races", () => {

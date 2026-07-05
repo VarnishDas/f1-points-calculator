@@ -12,15 +12,15 @@ export default function DriverPool({ drivers, teams }: DriverPoolProps) {
 
   return (
     <section className="rounded-md border border-white/10 bg-neutral-950/75 shadow-2xl shadow-black/25">
-      <div className="flex flex-col gap-1 border-b border-white/10 px-4 py-3 sm:flex-row sm:items-baseline sm:gap-4">
-        <h2 className="text-sm font-black uppercase tracking-[0.12em] text-neutral-100">
+      <div className="flex flex-col gap-0.5 border-b border-white/10 px-3 py-2 sm:flex-row sm:items-baseline sm:gap-3">
+        <h2 className="text-xs font-black uppercase tracking-[0.12em] text-neutral-100">
           Driver Pool
         </h2>
-        <p className="text-xs text-neutral-500">
+        <p className="text-[11px] text-neutral-500">
           Drag a driver into any editable race cell
         </p>
       </div>
-      <div className="grid max-h-48 grid-cols-[repeat(auto-fill,minmax(7rem,1fr))] gap-2 overflow-y-auto p-3 sm:grid-cols-[repeat(auto-fill,minmax(8rem,1fr))] xl:max-h-36">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(5.35rem,1fr))] gap-1.5 overflow-visible p-2 sm:grid-cols-[repeat(auto-fill,minmax(5.75rem,1fr))]">
         {drivers.map((driver) => (
           <DriverTile
             key={driver.id}
