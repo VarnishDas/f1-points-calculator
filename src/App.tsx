@@ -1,16 +1,24 @@
-import {
-  selectDriverStandings,
-  selectTeamStandings,
-  useCalculatorStore,
-} from "./store/useCalculatorStore";
+import { useMemo } from "react";
+
+import { useCalculatorStore } from "./store/useCalculatorStore";
+import { calculateStandings } from "./engine/calculateStandings";
+import { calculateTeamStandings } from "./engine/calculateTeamStandings";
 import StandingsTable from "./components/StandingsTable";
 import TeamStandingsTable from "./components/TeamStandingsTable";
 
 function App() {
+  const races = useCalculatorStore((s) => s.races);
   const drivers = useCalculatorStore((s) => s.drivers);
   const teams = useCalculatorStore((s) => s.teams);
-  const driverStandings = useCalculatorStore(selectDriverStandings);
-  const teamStandings = useCalculatorStore(selectTeamStandings);
+
+  const driverStandings = useMemo(
+    () => calculateStandings(races, drivers, teams).drivers,
+    [races, drivers, teams],
+  );
+  const teamStandings = useMemo(
+    () => calculateTeamStandings(driverStandings, drivers, teams),
+    [driverStandings, drivers, teams],
+  );
 
   return (
     <main className="min-h-screen px-4 py-8 sm:py-12">
