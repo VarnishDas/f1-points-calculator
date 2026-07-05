@@ -4,10 +4,10 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { z } from "zod";
 
-import { APP_SEASON, DATA_SOURCE_BASE_URL } from "../src/config/season";
-import type { Driver } from "../src/types/driver";
-import type { EventResultEntry, Race } from "../src/types/race";
-import type { Team } from "../src/types/team";
+import { APP_SEASON, DATA_SOURCE_BASE_URL } from "../src/config/season.js";
+import type { Driver } from "../src/types/driver.js";
+import type { EventResultEntry, Race } from "../src/types/race.js";
+import type { Team } from "../src/types/team.js";
 
 type SourceConstructor = {
   constructorId: string;

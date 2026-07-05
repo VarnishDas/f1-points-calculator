@@ -8,7 +8,7 @@ import {
   type ExistingData,
   type GeneratedData,
   type SourceData,
-} from "./update-data";
+} from "./update-data.js";
 
 const existing: ExistingData = {
   drivers: [
