@@ -1,13 +1,42 @@
+import { drivers, races, teams } from "./data";
+import { calculateStandings } from "./engine/calculateStandings";
+import StandingsTable from "./components/StandingsTable";
+import TeamStandingsTable from "./components/TeamStandingsTable";
+
 function App() {
+  const { drivers: driverStandings, teams: teamStandings } = calculateStandings(
+    races,
+    drivers,
+    teams,
+  );
+
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-4">
-      <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight text-white text-center">
-        F1 2026 Championship Standings
-      </h1>
-      <p className="mt-4 text-neutral-400 text-center max-w-md">
-        Points calculator &amp; standings predictor. Drag-and-drop race
-        predictions coming soon.
-      </p>
+    <main className="min-h-screen px-4 py-8 sm:py-12">
+      <div className="mx-auto w-full max-w-3xl">
+        <header className="mb-8 text-center">
+          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white">
+            F1 2026 Championship Standings
+          </h1>
+          <p className="mt-3 text-neutral-400 max-w-xl mx-auto">
+            Live championship standings based on completed races. Drag-and-drop
+            race predictions coming soon.
+          </p>
+        </header>
+
+        <section className="mb-10" aria-label="Driver standings">
+          <h2 className="mb-3 text-lg font-medium text-white">Drivers</h2>
+          <StandingsTable
+            standings={driverStandings}
+            drivers={drivers}
+            teams={teams}
+          />
+        </section>
+
+        <section aria-label="Constructor standings">
+          <h2 className="mb-3 text-lg font-medium text-white">Constructors</h2>
+          <TeamStandingsTable standings={teamStandings} teams={teams} />
+        </section>
+      </div>
     </main>
   );
 }
