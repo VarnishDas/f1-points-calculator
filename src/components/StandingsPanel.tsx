@@ -25,7 +25,7 @@ export default function StandingsPanel({
 
   return (
     <aside className="min-h-0 rounded-md border border-white/10 bg-neutral-950/75 shadow-2xl shadow-black/30">
-      <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-4">
+      <div className="hidden items-center justify-between gap-3 border-b border-white/10 px-4 py-4 lg:flex">
         <h2 className="text-sm font-black uppercase tracking-[0.12em] text-neutral-100">
           Standings
         </h2>

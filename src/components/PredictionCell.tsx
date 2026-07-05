@@ -1,8 +1,8 @@
-import type { CSSProperties } from "react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 
 import type { Driver } from "../types/driver";
 import type { Team } from "../types/team";
+import { DriverCellTile, StaticDriverCellTile } from "./DriverTile";
 
 type PredictionCellProps = {
   raceId: string;
@@ -83,32 +83,18 @@ function DraggableCellDriver({
       },
     });
 
-  const style: CSSProperties = {
-    color: team?.color ?? "#f5f5f5",
-    opacity: isDragging ? 0.65 : 1,
-  };
-
   return (
-    <button
+    <DriverCellTile
       ref={setNodeRef}
-      type="button"
-      className="h-full w-full touch-none select-none rounded border border-white/10 bg-white/[0.06] text-[11px] font-black tracking-[0.08em] shadow-sm transition hover:border-white/25 active:cursor-grabbing"
-      style={style}
+      driver={driver}
+      team={team}
+      isDragging={isDragging}
       {...attributes}
       {...listeners}
-    >
-      {driver.code}
-    </button>
+    />
   );
 }
 
 function StaticCellDriver({ driver, team }: Pick<CellDriverProps, "driver" | "team">) {
-  return (
-    <span
-      className="grid h-full w-full place-items-center rounded border border-white/[0.06] bg-white/[0.035] text-[11px] font-black tracking-[0.08em]"
-      style={{ color: team?.color ?? "#f5f5f5" }}
-    >
-      {driver.code}
-    </span>
-  );
+  return <StaticDriverCellTile driver={driver} team={team} />;
 }

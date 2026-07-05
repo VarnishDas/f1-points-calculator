@@ -17,6 +17,7 @@ import PredictionBoard from "./PredictionBoard";
 import {
   getPredictionDragPayload,
   getPredictionDragStartPayload,
+  placeDriverAtPredictionPosition,
   type PredictionDragData,
 } from "./predictionDnd";
 
@@ -63,22 +64,20 @@ export default function PredictionWorkspace({
     const targetRace = races.find((race) => race.id === over.raceId);
     if (!targetRace || targetRace.status !== "upcoming") return;
 
-    const currentOrder = targetRace.result ? [...targetRace.result] : [];
-    const existingIndex = currentOrder.indexOf(active.driverId);
-
-    if (active.type === "prediction-driver" && active.raceId === targetRace.id) {
-      if (existingIndex < 0 || existingIndex === over.index) return;
-      currentOrder.splice(existingIndex, 1);
-      const insertIndex = Math.min(over.index, currentOrder.length);
-      currentOrder.splice(insertIndex, 0, active.driverId);
-      updatePrediction(targetRace.id, currentOrder);
+    if (
+      active.type === "prediction-driver" &&
+      active.raceId === targetRace.id &&
+      active.index === over.index
+    ) {
       return;
     }
 
-    if (existingIndex >= 0) currentOrder.splice(existingIndex, 1);
-    const insertIndex = Math.min(over.index, currentOrder.length);
-    currentOrder.splice(insertIndex, 0, active.driverId);
-    updatePrediction(targetRace.id, currentOrder);
+    const nextOrder = placeDriverAtPredictionPosition(
+      targetRace.result,
+      active.driverId,
+      over.index,
+    );
+    updatePrediction(targetRace.id, nextOrder);
   };
 
   const handleAutoFill = () => {

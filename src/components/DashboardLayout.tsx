@@ -21,9 +21,14 @@ export default function DashboardLayout({
           className="mb-3 flex h-11 w-full items-center justify-between rounded-md border border-white/10 bg-neutral-950/75 px-4 text-sm font-black uppercase tracking-[0.12em] text-neutral-100 lg:hidden"
           aria-expanded={isStandingsOpen}
         >
-          Standings
-          <span className="text-lg leading-none text-amber-400" aria-hidden="true">
-            {isStandingsOpen ? "−" : "+"}
+          <span>Standings</span>
+          <span className="flex items-center gap-3">
+            <span className="text-[10px] font-black text-amber-500">
+              Projected
+            </span>
+            <span className="text-lg leading-none text-amber-400" aria-hidden="true">
+              {isStandingsOpen ? "−" : "+"}
+            </span>
           </span>
         </button>
         <div className={isStandingsOpen ? "block lg:block" : "hidden lg:block"}>

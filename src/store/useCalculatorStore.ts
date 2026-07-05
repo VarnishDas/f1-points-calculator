@@ -24,7 +24,7 @@ export interface CalculatorState {
 function cloneRaces(races: Race[]): Race[] {
   return races.map((race) => ({
     ...race,
-    result: race.result ? [...race.result] : null,
+    result: race.result ? race.result.slice() : null,
   }));
 }
 
@@ -39,7 +39,7 @@ export const useCalculatorStore = create<CalculatorState>()((set) => ({
       if (!race || race.status !== "upcoming") return state;
       return {
         races: state.races.map((r) =>
-          r.id === raceId ? { ...r, result: [...orderedDriverIds] } : r,
+          r.id === raceId ? { ...r, result: orderedDriverIds.slice() } : r,
         ),
       };
     }),

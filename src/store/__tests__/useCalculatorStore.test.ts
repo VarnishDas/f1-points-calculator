@@ -41,6 +41,24 @@ describe("useCalculatorStore", () => {
     expect(updated?.result).toEqual(["norris", "piastri", "verstappen"]);
   });
 
+  it("updatePrediction preserves empty prediction slots for arbitrary positions", () => {
+    const upcoming = useCalculatorStore
+      .getState()
+      .races.find((r) => r.status === "upcoming");
+    if (!upcoming) throw new Error("expected at least one upcoming race");
+
+    const prediction: string[] = [];
+    prediction[4] = "norris";
+    useCalculatorStore.getState().updatePrediction(upcoming.id, prediction);
+
+    const updated = useCalculatorStore
+      .getState()
+      .races.find((r) => r.id === upcoming.id);
+    expect(updated?.result).toHaveLength(5);
+    expect(updated?.result?.[0]).toBeUndefined();
+    expect(updated?.result?.[4]).toBe("norris");
+  });
+
   it("updatePrediction does not modify completed races", () => {
     const completed = useCalculatorStore
       .getState()
