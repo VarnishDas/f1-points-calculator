@@ -18,8 +18,10 @@ export default function DashboardLayout({
         <button
           type="button"
           onClick={() => setIsStandingsOpen((open) => !open)}
-          className="mb-3 flex h-10 w-full items-center justify-between rounded-md border border-white/10 bg-neutral-950/75 px-3 text-xs font-black uppercase tracking-[0.12em] text-neutral-100 lg:hidden"
+          className="mb-3 flex h-11 w-full items-center justify-between rounded-md border border-white/10 bg-neutral-950/75 px-3 text-xs font-black uppercase tracking-[0.12em] text-neutral-100 lg:hidden"
+          aria-label="Toggle projected standings"
           aria-expanded={isStandingsOpen}
+          aria-controls="standings-panel-content"
         >
           <span>Standings</span>
           <span className="flex items-center gap-3">
@@ -32,6 +34,7 @@ export default function DashboardLayout({
           </span>
         </button>
         <div
+          id="standings-panel-content"
           className={
             isStandingsOpen
               ? "block w-full lg:flex lg:h-full lg:min-h-0"

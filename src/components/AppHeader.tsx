@@ -44,7 +44,8 @@ export default function AppHeader({ onReset }: AppHeaderProps) {
         <button
           type="button"
           onClick={onReset}
-          className="inline-flex h-8 items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.03] px-3 text-xs font-semibold text-neutral-200 transition hover:border-white/20 hover:bg-white/[0.07]"
+          aria-label="Reset all predictions"
+          className="inline-flex h-10 items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.03] px-3 text-xs font-semibold text-neutral-200 transition hover:border-white/20 hover:bg-white/[0.07] sm:h-8"
         >
           <span aria-hidden="true" className="text-base leading-none">
             ↺
@@ -54,7 +55,7 @@ export default function AppHeader({ onReset }: AppHeaderProps) {
         <button
           type="button"
           onClick={handleShare}
-          className="inline-flex h-8 items-center gap-1.5 rounded-md bg-red-600 px-3 text-xs font-bold text-white shadow-[0_0_22px_rgba(220,38,38,0.25)] transition hover:bg-red-500"
+          className="inline-flex h-10 items-center gap-1.5 rounded-md bg-red-600 px-3 text-xs font-bold text-white shadow-[0_0_22px_rgba(220,38,38,0.25)] transition hover:bg-red-500 sm:h-8"
           aria-label={copied ? "Scenario URL copied to clipboard" : "Share scenario URL"}
         >
           <span aria-hidden="true" className="text-base leading-none">

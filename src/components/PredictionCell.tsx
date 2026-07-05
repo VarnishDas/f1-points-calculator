@@ -35,10 +35,17 @@ export default function PredictionCell({
       ref={setNodeRef}
       className={
         isOver
-          ? "grid h-8 place-items-center rounded border border-amber-400/70 bg-amber-400/10"
+          ? "grid h-11 place-items-center rounded border border-amber-400/70 bg-amber-400/10 lg:h-8"
           : editable
-            ? "grid h-8 place-items-center rounded border border-dashed border-white/15 bg-black/20"
-            : "grid h-8 place-items-center rounded border border-white/[0.06] bg-white/[0.025]"
+            ? "grid h-11 place-items-center rounded border border-dashed border-white/15 bg-black/20 lg:h-8"
+            : "grid h-11 place-items-center rounded border border-white/[0.06] bg-white/[0.025] lg:h-8"
+      }
+      aria-label={
+        driver
+          ? undefined
+          : editable
+            ? `Empty position ${positionIndex + 1}`
+            : `Position ${positionIndex + 1} result`
       }
     >
       {driver ? (
@@ -89,6 +96,7 @@ function DraggableCellDriver({
       driver={driver}
       team={team}
       isDragging={isDragging}
+      aria-label={`Drag ${driver.firstName} ${driver.lastName}`}
       {...attributes}
       {...listeners}
     />

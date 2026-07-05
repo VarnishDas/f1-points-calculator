@@ -124,6 +124,9 @@ function TileContent({
 
   return (
     <>
+      <span className="sr-only">
+        Drag {driver.firstName} {driver.lastName} to a prediction position
+      </span>
       <span
         aria-hidden="true"
         className="absolute inset-y-1.5 left-1.5 w-0.5 rounded-full bg-[var(--team-color)]"
@@ -140,7 +143,7 @@ function TileContent({
 
 function getTileClasses(variant: DriverTileVariant) {
   if (variant === "pool") {
-    return "relative min-h-10 touch-none select-none overflow-hidden rounded border border-white/10 bg-white/[0.035] px-2 py-1.5 text-left shadow-sm transition hover:border-white/20 hover:bg-white/[0.07] active:cursor-grabbing";
+    return "relative min-h-11 touch-none select-none overflow-hidden rounded border border-white/10 bg-white/[0.035] px-2 py-1.5 text-left shadow-sm transition hover:border-white/20 hover:bg-white/[0.07] active:cursor-grabbing sm:min-h-10";
   }
 
   if (variant === "overlay") {

@@ -94,7 +94,10 @@ export default function PredictionWorkspace({
   };
 
   return (
-    <div className="flex min-w-0 flex-col gap-3 lg:min-h-0 lg:overflow-hidden">
+    <section
+      aria-label="Prediction workspace"
+      className="flex min-w-0 flex-col gap-3 lg:min-h-0 lg:overflow-hidden"
+    >
       <DndContext
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
@@ -114,6 +117,6 @@ export default function PredictionWorkspace({
           ) : null}
         </DragOverlay>
       </DndContext>
-    </div>
+    </section>
   );
 }

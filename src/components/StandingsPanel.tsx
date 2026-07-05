@@ -41,10 +41,11 @@ export default function StandingsPanel({
           <button
             type="button"
             onClick={() => setMode("drivers")}
+            aria-pressed={mode === "drivers"}
             className={
               mode === "drivers"
-                ? "rounded bg-amber-500/10 px-2 py-1.5 text-[11px] font-black text-amber-400 ring-1 ring-amber-500/50"
-                : "rounded px-2 py-1.5 text-[11px] font-bold text-neutral-500 transition hover:text-neutral-200"
+                ? "h-9 rounded bg-amber-500/10 px-2 text-xs font-black text-amber-400 ring-1 ring-amber-500/50 sm:h-8 sm:text-[11px]"
+                : "h-9 rounded px-2 text-xs font-bold text-neutral-500 transition hover:text-neutral-200 sm:h-8 sm:text-[11px]"
             }
           >
             Drivers
@@ -52,10 +53,11 @@ export default function StandingsPanel({
           <button
             type="button"
             onClick={() => setMode("constructors")}
+            aria-pressed={mode === "constructors"}
             className={
               mode === "constructors"
-                ? "rounded bg-amber-500/10 px-2 py-1.5 text-[11px] font-black text-amber-400 ring-1 ring-amber-500/50"
-                : "rounded px-2 py-1.5 text-[11px] font-bold text-neutral-500 transition hover:text-neutral-200"
+                ? "h-9 rounded bg-amber-500/10 px-2 text-xs font-black text-amber-400 ring-1 ring-amber-500/50 sm:h-8 sm:text-[11px]"
+                : "h-9 rounded px-2 text-xs font-bold text-neutral-500 transition hover:text-neutral-200 sm:h-8 sm:text-[11px]"
             }
           >
             Constructors
@@ -63,15 +65,15 @@ export default function StandingsPanel({
         </div>
       </div>
 
-      <div className="custom-scrollbar stable-scrollbar-gutter max-h-[24.5rem] overflow-x-auto overflow-y-auto lg:min-h-0 lg:max-h-none lg:flex-1">
+      <div className="custom-scrollbar max-h-[60vh] overflow-x-auto overflow-y-auto sm:max-h-[24.5rem] lg:min-h-0 lg:max-h-none lg:flex-1 lg:stable-scrollbar-gutter">
         {mode === "drivers" ? (
           <table className="w-full border-collapse text-xs">
             <thead className="sticky top-0 z-10 bg-neutral-950">
               <tr className="border-b border-white/10 text-left text-[11px] uppercase tracking-wide text-neutral-500">
-                <th className="w-10 px-4 py-2 font-bold">#</th>
+                <th className="sticky left-0 z-20 w-10 bg-neutral-950 px-2 py-2 font-bold sm:px-4">#</th>
                 <th className="px-1 py-2 font-bold">Driver</th>
                 <th className="w-10 px-1 py-2 text-right font-bold">W</th>
-                <th className="w-16 px-4 py-2 text-right font-bold">Pts</th>
+                <th className="w-16 px-2 py-2 text-right font-bold sm:px-4">Pts</th>
               </tr>
             </thead>
             <tbody>
@@ -85,7 +87,7 @@ export default function StandingsPanel({
                     key={standing.driverId}
                     className="border-b border-white/[0.06] last:border-b-0"
                   >
-                    <td className="px-4 py-2 tabular-nums text-neutral-400">
+                    <td className="sticky left-0 z-10 bg-neutral-950 px-2 py-2 tabular-nums text-neutral-400 sm:px-4">
                       {standing.position}
                     </td>
                     <td className="min-w-0 px-1 py-2">
@@ -115,7 +117,7 @@ export default function StandingsPanel({
                     <td className="px-1 py-2 text-right tabular-nums text-neutral-500">
                       {standing.wins}
                     </td>
-                    <td className="px-4 py-2 text-right font-black tabular-nums text-amber-400">
+                    <td className="px-2 py-2 text-right font-black tabular-nums text-amber-400 sm:px-4">
                       {standing.points}
                     </td>
                   </tr>
@@ -127,9 +129,9 @@ export default function StandingsPanel({
           <table className="w-full border-collapse text-xs">
             <thead className="sticky top-0 z-10 bg-neutral-950">
               <tr className="border-b border-white/10 text-left text-[11px] uppercase tracking-wide text-neutral-500">
-                <th className="w-10 px-4 py-2 font-bold">#</th>
+                <th className="sticky left-0 z-20 w-10 bg-neutral-950 px-2 py-2 font-bold sm:px-4">#</th>
                 <th className="px-1 py-2 font-bold">Constructor</th>
-                <th className="w-16 px-4 py-2 text-right font-bold">Pts</th>
+                <th className="w-16 px-2 py-2 text-right font-bold sm:px-4">Pts</th>
               </tr>
             </thead>
             <tbody>
@@ -141,7 +143,7 @@ export default function StandingsPanel({
                     key={standing.teamId}
                     className="border-b border-white/[0.06] last:border-b-0"
                   >
-                    <td className="px-4 py-2 tabular-nums text-neutral-400">
+                    <td className="sticky left-0 z-10 bg-neutral-950 px-2 py-2 tabular-nums text-neutral-400 sm:px-4">
                       {standing.position}
                     </td>
                     <td className="min-w-0 px-1 py-2">
@@ -156,7 +158,7 @@ export default function StandingsPanel({
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-2 text-right font-black tabular-nums text-amber-400">
+                    <td className="px-2 py-2 text-right font-black tabular-nums text-amber-400 sm:px-4">
                       {standing.points}
                     </td>
                   </tr>

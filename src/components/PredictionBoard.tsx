@@ -116,7 +116,8 @@ export default function PredictionBoard({
           <button
             type="button"
             onClick={onClear}
-            className="h-9 rounded-md border border-white/10 bg-white/[0.03] px-3 text-xs font-bold text-neutral-300 transition hover:border-white/20 hover:bg-white/[0.07]"
+            aria-label="Clear all predictions"
+            className="h-10 rounded-md border border-white/10 bg-white/[0.03] px-3 text-xs font-bold text-neutral-300 transition hover:border-white/20 hover:bg-white/[0.07] sm:h-9"
           >
             Clear Board
           </button>
@@ -136,7 +137,7 @@ type BoardRowProps = {
 function BoardRow({ positionIndex, races, driverById, teamById }: BoardRowProps) {
   return (
     <>
-      <div className="sticky left-0 z-10 grid h-8 place-items-center rounded border border-white/[0.06] bg-neutral-950 text-xs tabular-nums text-neutral-300">
+      <div className="sticky left-0 z-10 grid h-11 place-items-center rounded border border-white/[0.06] bg-neutral-950 text-xs tabular-nums text-neutral-300 lg:h-8">
         {positionIndex + 1}
       </div>
       {races.map((race) => {

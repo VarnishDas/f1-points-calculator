@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://f1-points-calculator.varnishdas.dev/sitemap.xml
