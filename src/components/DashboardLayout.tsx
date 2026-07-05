@@ -14,7 +14,7 @@ export default function DashboardLayout({
 
   return (
     <div className="grid min-h-0 flex-1 gap-3 overflow-hidden p-3 lg:grid-cols-[320px_minmax(0,1fr)]">
-      <div className="min-h-0 min-w-0 overflow-hidden">
+      <div className="min-h-0 min-w-0 overflow-hidden lg:flex lg:flex-col">
         <button
           type="button"
           onClick={() => setIsStandingsOpen((open) => !open)}
@@ -34,8 +34,8 @@ export default function DashboardLayout({
         <div
           className={
             isStandingsOpen
-              ? "custom-scrollbar block max-h-[45svh] overflow-auto lg:block lg:max-h-none lg:overflow-visible"
-              : "hidden lg:block"
+              ? "block w-full max-h-[45svh] overflow-hidden lg:flex lg:h-full lg:min-h-0 lg:max-h-none"
+              : "hidden w-full lg:flex lg:h-full lg:min-h-0"
           }
         >
           {standings}

@@ -47,3 +47,7 @@ body,
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(163, 163, 163, 0.7);
 }
+
+.stable-scrollbar-gutter {
+  scrollbar-gutter: stable;
+}
