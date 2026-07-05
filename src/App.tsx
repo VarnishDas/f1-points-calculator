@@ -5,6 +5,7 @@ import { calculateStandings } from "./engine/calculateStandings";
 import { calculateTeamStandings } from "./engine/calculateTeamStandings";
 import StandingsTable from "./components/StandingsTable";
 import TeamStandingsTable from "./components/TeamStandingsTable";
+import RaceList from "./components/RaceList";
 
 function App() {
   const races = useCalculatorStore((s) => s.races);
@@ -28,8 +29,8 @@ function App() {
             F1 2026 Championship Standings
           </h1>
           <p className="mt-3 text-neutral-400 max-w-xl mx-auto">
-            Live championship standings based on completed races. Drag-and-drop
-            race predictions coming soon.
+            Live championship standings based on completed races. Predict the
+            rest of the season to see how the title fight could swing.
           </p>
         </header>
 
@@ -45,6 +46,13 @@ function App() {
         <section aria-label="Constructor standings">
           <h2 className="mb-3 text-lg font-medium text-white">Constructors</h2>
           <TeamStandingsTable standings={teamStandings} teams={teams} />
+        </section>
+
+        <section aria-label="Race results and predictions" className="mt-10">
+          <h2 className="mb-3 text-lg font-medium text-white">
+            Race Results & Predictions
+          </h2>
+          <RaceList races={races} drivers={drivers} teams={teams} />
         </section>
       </div>
     </main>
