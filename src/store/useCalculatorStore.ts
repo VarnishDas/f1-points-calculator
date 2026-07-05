@@ -8,6 +8,7 @@ import type { ScenarioPredictionsBySession } from "../utils/encodeScenario";
 
 import { drivers as initialDrivers, races as initialRaces, teams as initialTeams } from "../data";
 import { calculateStandings } from "../engine/calculateStandings";
+import { isPredictionSessionEditable } from "../utils/predictionSession";
 
 const PREDICTION_FIELD: Record<PredictionSessionType, keyof Pick<Race, "prediction" | "sprintPrediction">> = {
   grandPrix: "prediction",
@@ -50,13 +51,6 @@ function cloneRaces(races: Race[]): Race[] {
   }));
 }
 
-function canMutatePrediction(race: Race, session: PredictionSessionType): boolean {
-  if (race.status !== "upcoming") return false;
-  if (session === "sprint" && !race.hasSprint) return false;
-  if (session === "sprint" && race.sprintResult?.length) return false;
-  return true;
-}
-
 function applyEntriesToPrediction(
   race: Race,
   session: PredictionSessionType,
@@ -86,7 +80,7 @@ export const useCalculatorStore = create<CalculatorState>()((set) => ({
   updatePrediction: (raceId, session, orderedDriverIds) =>
     set((state) => {
       const race = state.races.find((r) => r.id === raceId);
-      if (!race || !canMutatePrediction(race, session)) return state;
+      if (!race || !isPredictionSessionEditable(race, session)) return state;
       const field = PREDICTION_FIELD[session];
       return {
         races: state.races.map((r) =>
@@ -98,7 +92,7 @@ export const useCalculatorStore = create<CalculatorState>()((set) => ({
   clearPredictionPosition: (raceId, session, positionIndex) =>
     set((state) => {
       const race = state.races.find((r) => r.id === raceId);
-      if (!race || !canMutatePrediction(race, session)) return state;
+      if (!race || !isPredictionSessionEditable(race, session)) return state;
       const field = PREDICTION_FIELD[session];
       const current = race[field] as string[] | null;
       if (!current) return state;

@@ -1,7 +1,10 @@
+import { useLayoutEffect, useMemo, useRef } from "react";
+
 import type { Driver } from "../types/driver";
-import type { Race } from "../types/race";
+import type { PredictionSessionType, Race } from "../types/race";
 import type { Team } from "../types/team";
 import { getClassificationSize } from "../utils/classification";
+import { isPredictionSessionEditable } from "../utils/predictionSession";
 import { sortRacesByRound } from "./raceUtils";
 import PredictionCell from "./PredictionCell";
 
@@ -14,34 +17,54 @@ type PredictionBoardProps = {
 type BoardColumn = {
   id: string;
   race: Race;
-  session: "grandPrix" | "sprint";
+  session: PredictionSessionType;
+  isEditable: boolean;
 };
+
+const AUTO_SCROLL_SESSION_ORDER: PredictionSessionType[] = ["sprint", "grandPrix"];
 
 export default function PredictionBoard({
   races,
   drivers,
   teams,
 }: PredictionBoardProps) {
-  const sortedRaces = sortRacesByRound(races);
-  const columns = sortedRaces.flatMap((race): BoardColumn[] => {
-    const raceColumn: BoardColumn = {
-      id: `${race.id}:gp`,
-      race,
-      session: "grandPrix",
-    };
-    if (!race.hasSprint && !race.sprintResult?.length) return [raceColumn];
-    return [
-      raceColumn,
-      {
-        id: `${race.id}:sprint`,
-        race,
-        session: "sprint",
-      },
-    ];
-  });
-  const driverById = new Map(drivers.map((driver) => [driver.id, driver]));
-  const teamById = new Map(teams.map((team) => [team.id, team]));
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const columnRefs = useRef(new Map<string, HTMLDivElement>());
+  const hasAutoScrolledRef = useRef(false);
+
+  const sortedRaces = useMemo(() => sortRacesByRound(races), [races]);
+  const columns = useMemo(
+    () =>
+      sortedRaces.flatMap((race): BoardColumn[] => {
+        const raceColumn = createBoardColumn(race, "grandPrix");
+        if (!race.hasSprint && !race.sprintResult?.length) return [raceColumn];
+        return [raceColumn, createBoardColumn(race, "sprint")];
+      }),
+    [sortedRaces],
+  );
+  const autoScrollColumnId = getAutoScrollColumnId(columns);
+  const driverById = useMemo(
+    () => new Map(drivers.map((driver) => [driver.id, driver])),
+    [drivers],
+  );
+  const teamById = useMemo(
+    () => new Map(teams.map((team) => [team.id, team])),
+    [teams],
+  );
   const classificationSize = getClassificationSize(races);
+
+  useLayoutEffect(() => {
+    if (hasAutoScrolledRef.current || !autoScrollColumnId) return;
+
+    const container = scrollContainerRef.current;
+    const target = columnRefs.current.get(autoScrollColumnId);
+    if (!container || !target) return;
+
+    container.scrollLeft +=
+      target.getBoundingClientRect().left -
+      container.getBoundingClientRect().left;
+    hasAutoScrolledRef.current = true;
+  }, [autoScrollColumnId]);
 
   return (
     <section className="flex min-w-0 flex-col rounded-md border border-white/10 bg-neutral-950/75 shadow-2xl shadow-black/25 lg:min-h-0 lg:flex-1">
@@ -74,21 +97,31 @@ export default function PredictionBoard({
           ))}
         </div>
 
-        <div className="custom-scrollbar min-w-0 flex-1 overflow-x-auto">
+        <div
+          ref={scrollContainerRef}
+          className="custom-scrollbar min-w-0 flex-1 overflow-x-auto"
+        >
           <div
             className="grid w-max gap-1"
             style={{
               gridTemplateColumns: `repeat(${columns.length}, 5.5rem)`,
             }}
           >
-            {columns.map(({ id, race, session }) => {
+            {columns.map(({ id, race, session, isEditable }) => {
               const isSprint = session === "sprint";
               const prediction = isSprint ? race.sprintPrediction : race.prediction;
-              const predicted = race.status === "upcoming" && !!prediction?.length;
+              const predicted = isEditable && !!prediction?.length;
               const completed = isSprint ? !!race.sprintResult?.length : race.status === "completed";
               return (
                 <div
                   key={id}
+                  ref={(node) => {
+                    if (node) {
+                      columnRefs.current.set(id, node);
+                    } else {
+                      columnRefs.current.delete(id);
+                    }
+                  }}
                   className={
                     predicted
                       ? "h-[4.5rem] rounded border border-red-500/50 bg-red-500/10 px-1 py-1.5 text-center"
@@ -148,7 +181,7 @@ type BoardRowProps = {
 function BoardRow({ positionIndex, columns, driverById, teamById }: BoardRowProps) {
   return (
     <>
-      {columns.map(({ id, race, session }) => {
+      {columns.map(({ id, race, session, isEditable }) => {
         const isSprint = session === "sprint";
         const officialEntry =
           isSprint
@@ -165,9 +198,6 @@ function BoardRow({ positionIndex, columns, driverById, teamById }: BoardRowProp
         const driver = driverId ? driverById.get(driverId) : undefined;
         const teamId = officialEntry?.teamId ?? driver?.teamId;
         const team = teamId ? teamById.get(teamId) : undefined;
-        const isLocked =
-          race.status === "completed" || (isSprint && !!race.sprintResult?.length);
-
         return (
           <PredictionCell
             key={`${id}-${positionIndex}`}
@@ -176,7 +206,7 @@ function BoardRow({ positionIndex, columns, driverById, teamById }: BoardRowProp
             positionIndex={positionIndex}
             driver={driver}
             team={team}
-            editable={!isLocked}
+            editable={isEditable}
           />
         );
       })}
@@ -201,4 +231,52 @@ function formatRaceLabel(name: string): string {
     .replace(/^Mexico City$/i, "Mexico")
     .replace(/^Saudi Arabian$/i, "Saudi")
     .replace(/^Emilia Romagna$/i, "Imola");
+}
+
+function createBoardColumn(
+  race: Race,
+  session: PredictionSessionType,
+): BoardColumn {
+  return {
+    id: `${race.id}:${session === "grandPrix" ? "gp" : "sprint"}`,
+    race,
+    session,
+    isEditable: isPredictionSessionEditable(race, session),
+  };
+}
+
+function getAutoScrollColumnId(columns: BoardColumn[]): string | undefined {
+  const seenRaceIds = new Set<string>();
+  let firstEditableColumnId: string | undefined;
+
+  for (const column of columns) {
+    if (seenRaceIds.has(column.race.id)) continue;
+    seenRaceIds.add(column.race.id);
+
+    for (const session of AUTO_SCROLL_SESSION_ORDER) {
+      const sessionColumn = columns.find(
+        (candidate) =>
+          candidate.race.id === column.race.id && candidate.session === session,
+      );
+      if (sessionColumn?.isEditable) {
+        firstEditableColumnId = sessionColumn.id;
+        break;
+      }
+    }
+
+    if (firstEditableColumnId) break;
+  }
+
+  if (firstEditableColumnId) {
+    const firstEditableIndex = columns.findIndex(
+      (column) => column.id === firstEditableColumnId,
+    );
+    const previousFinishedColumn = columns
+      .slice(0, firstEditableIndex)
+      .findLast((column) => !column.isEditable);
+
+    return previousFinishedColumn?.id ?? firstEditableColumnId;
+  }
+
+  return columns.at(-1)?.id;
 }
