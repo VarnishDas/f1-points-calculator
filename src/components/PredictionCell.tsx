@@ -1,11 +1,17 @@
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 
 import type { Driver } from "../types/driver";
+import type { PredictionSessionType } from "../types/race";
 import type { Team } from "../types/team";
 import { DriverCellTile, StaticDriverCellTile } from "./DriverTile";
+import {
+  getPredictionDroppableId,
+  getPredictionDraggableId,
+} from "./predictionDnd";
 
 type PredictionCellProps = {
   raceId: string;
+  session: PredictionSessionType;
   positionIndex: number;
   driver?: Driver;
   team?: Team;
@@ -14,16 +20,18 @@ type PredictionCellProps = {
 
 export default function PredictionCell({
   raceId,
+  session,
   positionIndex,
   driver,
   team,
   editable,
 }: PredictionCellProps) {
   const { setNodeRef, isOver } = useDroppable({
-    id: `cell:${raceId}:${positionIndex}`,
+    id: getPredictionDroppableId(raceId, session, positionIndex),
     disabled: !editable,
     data: {
       type: "prediction-cell",
+      session,
       raceId,
       index: positionIndex,
       editable,
@@ -52,6 +60,7 @@ export default function PredictionCell({
         editable ? (
           <DraggableCellDriver
             raceId={raceId}
+            session={session}
             positionIndex={positionIndex}
             driver={driver}
             team={team}
@@ -68,6 +77,7 @@ export default function PredictionCell({
 
 type CellDriverProps = {
   raceId: string;
+  session: PredictionSessionType;
   positionIndex: number;
   driver: Driver;
   team?: Team;
@@ -75,17 +85,19 @@ type CellDriverProps = {
 
 function DraggableCellDriver({
   raceId,
+  session,
   positionIndex,
   driver,
   team,
 }: CellDriverProps) {
   const { attributes, listeners, setNodeRef, isDragging } =
     useDraggable({
-      id: `pick:${raceId}:${driver.id}`,
+      id: getPredictionDraggableId(raceId, session, driver.id),
       data: {
         type: "prediction-driver",
         driverId: driver.id,
         raceId,
+        session,
         index: positionIndex,
       },
     });

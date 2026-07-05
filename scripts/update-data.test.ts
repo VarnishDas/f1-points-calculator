@@ -187,6 +187,7 @@ describe("transformSourceData", () => {
       status: "completed",
       hasSprint: true,
       prediction: null,
+      sprintPrediction: null,
     });
     expect(generated.races[0].grandPrixResult).toEqual([
       {
@@ -218,6 +219,7 @@ describe("transformSourceData", () => {
       status: "upcoming",
       grandPrixResult: null,
       prediction: null,
+      sprintPrediction: null,
     });
     expect(generated.drivers.find((driver) => driver.id === "reserve-driver")).toMatchObject({
       number: null,
@@ -258,6 +260,7 @@ describe("transformSourceData", () => {
             grandPrixResult: null,
             sprintResult: null,
             prediction: null,
+            sprintPrediction: null,
           },
         ],
       },
@@ -285,6 +288,7 @@ describe("transformSourceData", () => {
             grandPrixResult: [{ position: 1, driverId: "verstappen", teamId: "red-bull" }],
             sprintResult: null,
             prediction: null,
+            sprintPrediction: null,
           },
         ],
       },

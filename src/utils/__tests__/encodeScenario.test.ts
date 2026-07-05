@@ -20,6 +20,7 @@ function makeRace(partial: Partial<Race> & Pick<Race, "id" | "status">): Race {
     grandPrixResult: null,
     sprintResult: null,
     prediction: null,
+    sprintPrediction: null,
     ...partial,
   };
 }
@@ -113,6 +114,96 @@ describe("encodeScenario", () => {
     const second = JSON.stringify(encodeScenario(races));
 
     expect(first).toBe(second);
+  });
+
+  it("encodes a GP prediction for an upcoming sprint weekend", () => {
+    const upcomingSprint = makeRace({
+      id: "dutch-2026",
+      status: "upcoming",
+      hasSprint: true,
+      prediction: ["norris", "piastri", "verstappen"],
+    });
+
+    const scenario = encodeScenario([upcomingSprint]);
+
+    expect(scenario.predictions).toEqual({
+      "dutch-2026": [
+        { p: 1, d: "norris" },
+        { p: 2, d: "piastri" },
+        { p: 3, d: "verstappen" },
+      ],
+    });
+  });
+
+  it("does not encode the official sprint result of a completed sprint race", () => {
+    const completedSprint = makeRace({
+      id: "chinese-2026",
+      status: "completed",
+      hasSprint: true,
+      grandPrixResult: [
+        { position: 1, driverId: "verstappen", teamId: "red-bull" },
+      ],
+      sprintResult: [
+        { position: 1, driverId: "russell", teamId: "mercedes", points: 8 },
+        { position: 2, driverId: "leclerc", teamId: "ferrari", points: 7 },
+      ],
+    });
+
+    const scenario = encodeScenario([completedSprint]);
+
+    expect(scenario.predictions).toEqual({});
+    expect(scenario.sprintPredictions).toEqual({});
+  });
+
+  it("encodes sprint predictions for upcoming sprint weekends", () => {
+    const upcomingSprint = makeRace({
+      id: "dutch-2026",
+      status: "upcoming",
+      hasSprint: true,
+      prediction: ["norris"],
+      sprintPrediction: ["piastri", "verstappen"],
+    });
+
+    const scenario = encodeScenario([upcomingSprint]);
+
+    expect(scenario.v).toBe(2);
+    expect(scenario.predictions).toEqual({
+      "dutch-2026": [{ p: 1, d: "norris" }],
+    });
+    expect(scenario.sprintPredictions).toEqual({
+      "dutch-2026": [
+        { p: 1, d: "piastri" },
+        { p: 2, d: "verstappen" },
+      ],
+    });
+  });
+
+  it("does not encode sprint predictions for non-sprint weekends", () => {
+    const upcomingNonSprint = makeRace({
+      id: "miami-2026",
+      status: "upcoming",
+      hasSprint: false,
+      prediction: null,
+      sprintPrediction: ["norris"],
+    });
+
+    const scenario = encodeScenario([upcomingNonSprint]);
+
+    expect(scenario.sprintPredictions).toEqual({});
+  });
+
+  it("produces a hash value when only sprint predictions exist", () => {
+    const upcomingSprint = makeRace({
+      id: "dutch-2026",
+      status: "upcoming",
+      hasSprint: true,
+      sprintPrediction: ["norris"],
+    });
+
+    const hash = encodeScenarioHash([upcomingSprint]);
+
+    expect(hash).not.toBe("");
+    expect(hash.startsWith(`#${SCENARIO_HASH_KEY}=`)).toBe(true);
   });
 });
 

@@ -41,6 +41,7 @@ function race(id: string, result: string[] | null, status: Race["status"]): Race
     grandPrixResult,
     sprintResult: null,
     prediction: status === "upcoming" ? result : null,
+    sprintPrediction: null,
   };
 }
 
@@ -173,5 +174,72 @@ describe("calculateWdcStatus", () => {
 
     expect(status.a).toBe("inContention");
     expect(status.b).toBe("inContention");
+  });
+
+  describe("sprint predictions", () => {
+    function sprintRace(id: string, gpResult: string[] | null, sprintPrediction: string[] | null, status: Race["status"]): Race {
+      const grandPrixResult =
+        status === "completed" && gpResult
+          ? gpResult.map((driverId, index) => ({
+              position: index + 1,
+              driverId,
+              teamId: "team",
+            }))
+          : null;
+
+      return {
+        id,
+        round: Number(id.replace(/\D/g, "")) || 1,
+        name: id,
+        circuit: "Test",
+        date: "2026-01-01",
+        status,
+        hasSprint: true,
+        grandPrixResult,
+        sprintResult: null,
+        prediction: status === "upcoming" ? gpResult : null,
+        sprintPrediction: status === "upcoming" ? sprintPrediction : null,
+      };
+    }
+
+    it("counts sprint prediction points in base standings", () => {
+      const drivers = makeDrivers(["leader", "chaser"]);
+      const races: Race[] = [
+        sprintRace("r1", ["leader"], ["chaser"], "upcoming"),
+      ];
+
+      const status = calculateWdcStatus(races, drivers, testTeams);
+
+      expect(status.leader).toBe("inContention");
+      expect(status.chaser).toBe("inContention");
+    });
+
+    it("uses sprint P9 best-case as zero points", () => {
+      const drivers = makeDrivers(["leader", "chaser"]);
+      const sparseSprint: string[] = [];
+      sparseSprint[8] = "chaser";
+      const races: Race[] = [
+        sprintRace("r1", ["leader"], sparseSprint, "upcoming"),
+      ];
+
+      const status = calculateWdcStatus(races, drivers, testTeams);
+
+      expect(status.chaser).toBe("outOfContention");
+    });
+
+    it("keeps a driver in contention when an empty slot in either session could change the outcome", () => {
+      const drivers = makeDrivers(["leader", "chaser"]);
+      const races: Race[] = [
+        sprintRace("r1", ["leader"], ["chaser"], "upcoming"),
+      ];
+
+      const status = calculateWdcStatus(races, drivers, testTeams);
+
+      // Chaser already has sprint P1 (8 pts) and can still claim GP P1 (25 pts).
+      // Leader has GP P1 (25 pts) and can still claim sprint P1 (8 pts).
+      // Both best cases tie on countback, so neither is ruled out.
+      expect(status.chaser).toBe("inContention");
+      expect(status.leader).toBe("inContention");
+    });
   });
 });

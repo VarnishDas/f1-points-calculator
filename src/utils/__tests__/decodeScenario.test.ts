@@ -29,6 +29,7 @@ function makeRace(partial: Partial<Race> & Pick<Race, "id" | "status">): Race {
     grandPrixResult: null,
     sprintResult: null,
     prediction: null,
+    sprintPrediction: null,
     ...partial,
   };
 }
@@ -244,6 +245,115 @@ describe("decodeScenario data filtering", () => {
     const decoded = decodeScenarioFromString(encodePayload(payload), contextFor(UPCOMING_RACES));
 
     expect(decoded?.predictions).toEqual({ "miami-2026": [{ p: 1, d: "norris" }] });
+  });
+});
+
+describe("decodeScenario sprint weekend handling", () => {
+  it("round-trips a GP prediction for an upcoming sprint weekend", () => {
+    const upcomingSprint = makeRace({
+      id: "dutch-2026",
+      status: "upcoming",
+      hasSprint: true,
+      prediction: ["norris", "piastri", "verstappen"],
+    });
+    const scenario = encodeScenario([upcomingSprint]);
+    const encoded = encodePayload(scenario);
+
+    const decoded = decodeScenarioFromString(
+      encoded,
+      contextFor([makeRace({ id: "dutch-2026", status: "upcoming", hasSprint: true, prediction: null })]),
+    );
+
+    expect(decoded).toEqual(scenario);
+  });
+
+  it("round-trips GP and sprint predictions for an upcoming sprint weekend", () => {
+    const upcomingSprint = makeRace({
+      id: "dutch-2026",
+      status: "upcoming",
+      hasSprint: true,
+      prediction: ["norris"],
+      sprintPrediction: ["piastri"],
+    });
+    const scenario = encodeScenario([upcomingSprint]);
+    const encoded = encodePayload(scenario);
+
+    const decoded = decodeScenarioFromString(
+      encoded,
+      contextFor([makeRace({ id: "dutch-2026", status: "upcoming", hasSprint: true, prediction: null, sprintPrediction: null })]),
+    );
+
+    expect(decoded).toEqual(scenario);
+  });
+
+  it("ignores completed sprint races even when the payload references them", () => {
+    const payload = {
+      v: 2,
+      predictions: {
+        "chinese-2026": [{ p: 1, d: "norris" }],
+        "dutch-2026": [{ p: 1, d: "piastri" }],
+      },
+      sprintPredictions: {
+        "chinese-2026": [{ p: 1, d: "verstappen" }],
+        "dutch-2026": [{ p: 1, d: "norris" }],
+      },
+    };
+
+    const completedSprint = makeRace({
+      id: "chinese-2026",
+      status: "completed",
+      hasSprint: true,
+      grandPrixResult: [{ position: 1, driverId: "verstappen", teamId: "red-bull" }],
+      sprintResult: [{ position: 1, driverId: "russell", teamId: "mercedes", points: 8 }],
+    });
+    const upcomingSprint = makeRace({
+      id: "dutch-2026",
+      status: "upcoming",
+      hasSprint: true,
+      prediction: null,
+      sprintPrediction: null,
+    });
+
+    const decoded = decodeScenarioFromString(encodePayload(payload), contextFor([completedSprint, upcomingSprint]));
+
+    expect(decoded?.predictions).toEqual({ "dutch-2026": [{ p: 1, d: "piastri" }] });
+    expect(decoded?.sprintPredictions).toEqual({ "dutch-2026": [{ p: 1, d: "norris" }] });
+  });
+
+  it("ignores sprint predictions for non-sprint weekends", () => {
+    const payload = {
+      v: 2,
+      predictions: {
+        "miami-2026": [{ p: 1, d: "piastri" }],
+      },
+      sprintPredictions: {
+        "miami-2026": [{ p: 1, d: "norris" }],
+      },
+    };
+
+    const upcomingNonSprint = makeRace({ id: "miami-2026", status: "upcoming", hasSprint: false });
+
+    const decoded = decodeScenarioFromString(encodePayload(payload), contextFor([upcomingNonSprint]));
+
+    expect(decoded?.predictions).toEqual({ "miami-2026": [{ p: 1, d: "piastri" }] });
+    expect(decoded?.sprintPredictions).toEqual({});
+  });
+
+  it("decodes v1 GP-only URLs and normalizes them to v2", () => {
+    const payload = {
+      v: 1,
+      predictions: {
+        "china-2026": [{ p: 1, d: "norris" }],
+      },
+    };
+
+    const upcoming = makeRace({ id: "china-2026", status: "upcoming" });
+
+    const decoded = decodeScenarioFromString(encodePayload(payload), contextFor([upcoming]));
+
+    expect(decoded?.v).toBe(2);
+    expect(decoded?.predictions).toEqual({ "china-2026": [{ p: 1, d: "norris" }] });
+    expect(decoded?.sprintPredictions).toEqual({});
   });
 });
 

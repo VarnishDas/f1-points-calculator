@@ -6,7 +6,7 @@ import {
   SCENARIO_HASH_KEY,
   SCENARIO_VERSION,
   decodeBase64Url,
-  type EncodedScenarioV1,
+  type EncodedScenarioV2,
   type ScenarioPredictionEntry,
   type ScenarioPredictions,
 } from "./encodeScenario";
@@ -26,7 +26,7 @@ export interface DecodeContext {
  * the store. `predictions` only references upcoming races and driver ids that
  * exist in the supplied {@link DecodeContext}.
  */
-export type DecodedScenario = EncodedScenarioV1;
+export type DecodedScenario = EncodedScenarioV2;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -44,41 +44,51 @@ function isEntry(value: unknown): value is ScenarioPredictionEntry {
   );
 }
 
-/**
- * Validate the parsed JSON structure and filter it against the current app
- * data. Returns `null` for any unsupported version, malformed shape, or when
- * nothing usable remains after filtering. Never throws.
- */
-function validateScenario(data: unknown, context: DecodeContext): DecodedScenario | null {
-  if (!isRecord(data)) return null;
-  if (data.v !== SCENARIO_VERSION) return null;
+interface ValidationContext {
+  upcomingRaceIds: Set<string>;
+  sprintRaceIds: Set<string>;
+  driverIds: Set<string>;
+  classificationSize: number;
+}
 
-  const rawPredictions = data.predictions;
-  if (!isRecord(rawPredictions)) return null;
+function buildValidationContext(context: DecodeContext): ValidationContext {
+  return {
+    upcomingRaceIds: new Set(
+      context.races.filter((race) => race.status === "upcoming").map((race) => race.id),
+    ),
+    sprintRaceIds: new Set(
+      context.races.filter((race) => race.hasSprint).map((race) => race.id),
+    ),
+    driverIds: new Set(context.drivers.map((driver) => driver.id)),
+    classificationSize: getClassificationSize(context.races),
+  };
+}
 
-  const upcomingRaceIds = new Set(
-    context.races.filter((race) => race.status === "upcoming").map((race) => race.id),
-  );
-  const driverIds = new Set(context.drivers.map((driver) => driver.id));
-  const classificationSize = getClassificationSize(context.races);
+function validateSessionPredictions(
+  raw: unknown,
+  validation: ValidationContext,
+  allowSprint: boolean,
+): ScenarioPredictions | null {
+  if (!isRecord(raw)) return null;
 
   const predictions: ScenarioPredictions = {};
 
-  for (const [raceId, rawEntries] of Object.entries(rawPredictions)) {
-    if (!upcomingRaceIds.has(raceId)) continue;
+  for (const [raceId, rawEntries] of Object.entries(raw)) {
+    if (!validation.upcomingRaceIds.has(raceId)) continue;
+    if (allowSprint && !validation.sprintRaceIds.has(raceId)) continue;
     if (!Array.isArray(rawEntries)) continue;
 
     const seenDrivers = new Set<string>();
     const entries: ScenarioPredictionEntry[] = [];
 
-    for (const raw of rawEntries) {
-      if (!isEntry(raw)) continue;
-      if (raw.p < 1 || raw.p > classificationSize) continue;
-      if (!driverIds.has(raw.d)) continue;
-      if (seenDrivers.has(raw.d)) continue;
+    for (const rawEntry of rawEntries) {
+      if (!isEntry(rawEntry)) continue;
+      if (rawEntry.p < 1 || rawEntry.p > validation.classificationSize) continue;
+      if (!validation.driverIds.has(rawEntry.d)) continue;
+      if (seenDrivers.has(rawEntry.d)) continue;
 
-      seenDrivers.add(raw.d);
-      entries.push({ p: raw.p, d: raw.d });
+      seenDrivers.add(rawEntry.d);
+      entries.push({ p: rawEntry.p, d: rawEntry.d });
     }
 
     if (entries.length > 0) {
@@ -86,9 +96,46 @@ function validateScenario(data: unknown, context: DecodeContext): DecodedScenari
     }
   }
 
-  if (Object.keys(predictions).length === 0) return null;
+  return predictions;
+}
 
-  return { v: SCENARIO_VERSION, predictions };
+/**
+ * Validate the parsed JSON structure and filter it against the current app
+ * data. Returns `null` for any unsupported version, malformed shape, or when
+ * nothing usable remains after filtering. Never throws.
+ *
+ * Version 1 payloads (GP-only) are normalized to the v2 shape so downstream
+ * consumers can always work with a single interface.
+ */
+function validateScenario(data: unknown, context: DecodeContext): DecodedScenario | null {
+  if (!isRecord(data)) return null;
+  const version = data.v;
+  if (version !== 1 && version !== SCENARIO_VERSION) return null;
+
+  const validation = buildValidationContext(context);
+
+  let predictions: ScenarioPredictions = {};
+  let sprintPredictions: ScenarioPredictions = {};
+
+  if (version === 1) {
+    const normalized = validateSessionPredictions(data.predictions, validation, false);
+    if (normalized) predictions = normalized;
+  } else {
+    const gp = validateSessionPredictions(data.predictions, validation, false);
+    if (gp) predictions = gp;
+
+    const sprint = validateSessionPredictions(data.sprintPredictions, validation, true);
+    if (sprint) sprintPredictions = sprint;
+  }
+
+  if (
+    Object.keys(predictions).length === 0 &&
+    Object.keys(sprintPredictions).length === 0
+  ) {
+    return null;
+  }
+
+  return { v: SCENARIO_VERSION, predictions, sprintPredictions };
 }
 
 /**

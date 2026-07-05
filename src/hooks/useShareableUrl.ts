@@ -33,7 +33,7 @@ export function useShareableUrl(): void {
     const { races, drivers, applyScenario } = useCalculatorStore.getState();
     const decoded = decodeScenarioFromHash(window.location.hash, { races, drivers });
     if (decoded) {
-      applyScenario(decoded.predictions);
+      applyScenario(decoded);
     }
 
     // Canonicalize the URL once to match the now-current state: this clears

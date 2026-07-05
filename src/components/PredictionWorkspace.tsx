@@ -66,7 +66,7 @@ export default function PredictionWorkspace({
       if (active.type === "prediction-driver") {
         const sourceRace = races.find((race) => race.id === active.raceId);
         if (sourceRace?.status === "upcoming") {
-          clearPredictionPosition(active.raceId, active.index);
+          clearPredictionPosition(active.raceId, active.session, active.index);
         }
       }
       return;
@@ -80,17 +80,22 @@ export default function PredictionWorkspace({
     if (
       active.type === "prediction-driver" &&
       active.raceId === targetRace.id &&
+      active.session === over.session &&
       active.index === over.index
     ) {
       return;
     }
 
+    const targetPrediction =
+      over.session === "sprint"
+        ? targetRace.sprintPrediction
+        : targetRace.prediction;
     const nextOrder = placeDriverAtPredictionPosition(
-      targetRace.prediction,
+      targetPrediction,
       active.driverId,
       over.index,
     );
-    updatePrediction(targetRace.id, nextOrder);
+    updatePrediction(targetRace.id, over.session, nextOrder);
   };
 
   return (

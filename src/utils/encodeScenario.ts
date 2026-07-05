@@ -11,7 +11,7 @@ export const SCENARIO_HASH_KEY = "s";
  * Versioned scenario payload. Bumping `v` lets future URL formats be
  * migrated safely while older links can still be rejected predictably.
  */
-export const SCENARIO_VERSION = 1;
+export const SCENARIO_VERSION = 2;
 
 /**
  * A single predicted finishing placement for one race.
@@ -31,15 +31,24 @@ export interface ScenarioPredictionEntry {
  */
 export type ScenarioPredictions = Record<string, ScenarioPredictionEntry[]>;
 
-export interface EncodedScenarioV1 {
-  v: typeof SCENARIO_VERSION;
+/**
+ * Predictions grouped by session. `predictions` holds Grand Prix predictions
+ * and `sprintPredictions` holds Sprint predictions. Both use the same sparse
+ * entry format.
+ */
+export interface ScenarioPredictionsBySession {
   predictions: ScenarioPredictions;
+  sprintPredictions: ScenarioPredictions;
+}
+
+export interface EncodedScenarioV2 extends ScenarioPredictionsBySession {
+  v: typeof SCENARIO_VERSION;
 }
 
 /**
  * Build the minimal versioned scenario object for the given races.
  *
- * Only upcoming races with a non-null `prediction` contribute. Completed races
+ * Only upcoming races with a non-null prediction contribute. Completed races
  * are never encoded (their results are static app data). Empty cells in a
  * prediction (sparse array holes) are skipped, but the remaining entries
  * keep their explicit position so gaps are preserved on decode.
@@ -47,25 +56,35 @@ export interface EncodedScenarioV1 {
  * The output is deterministic: the same prediction state always produces the
  * same object (races iterated in array order, positions in ascending order).
  */
-export function encodeScenario(races: readonly Race[]): EncodedScenarioV1 {
+export function encodeScenario(races: readonly Race[]): EncodedScenarioV2 {
   const predictions: ScenarioPredictions = {};
+  const sprintPredictions: ScenarioPredictions = {};
 
   for (const race of races) {
-    if (race.status !== "upcoming" || !race.prediction) continue;
+    if (race.status !== "upcoming") continue;
 
-    const entries: ScenarioPredictionEntry[] = [];
-    for (let index = 0; index < race.prediction.length; index++) {
-      const driverId = race.prediction[index];
-      if (!driverId) continue;
-      entries.push({ p: index + 1, d: driverId });
+    if (race.prediction) {
+      const entries = encodePredictionEntries(race.prediction);
+      if (entries.length > 0) predictions[race.id] = entries;
     }
 
-    if (entries.length > 0) {
-      predictions[race.id] = entries;
+    if (race.hasSprint && race.sprintPrediction) {
+      const entries = encodePredictionEntries(race.sprintPrediction);
+      if (entries.length > 0) sprintPredictions[race.id] = entries;
     }
   }
 
-  return { v: SCENARIO_VERSION, predictions };
+  return { v: SCENARIO_VERSION, predictions, sprintPredictions };
+}
+
+function encodePredictionEntries(prediction: readonly string[]): ScenarioPredictionEntry[] {
+  const entries: ScenarioPredictionEntry[] = [];
+  for (let index = 0; index < prediction.length; index++) {
+    const driverId = prediction[index];
+    if (!driverId) continue;
+    entries.push({ p: index + 1, d: driverId });
+  }
+  return entries;
 }
 
 /**
@@ -100,7 +119,10 @@ export function decodeBase64Url(input: string): string {
  */
 export function encodeScenarioHashValue(races: readonly Race[]): string {
   const scenario = encodeScenario(races);
-  if (Object.keys(scenario.predictions).length === 0) return "";
+  const hasPredictions =
+    Object.keys(scenario.predictions).length > 0 ||
+    Object.keys(scenario.sprintPredictions).length > 0;
+  if (!hasPredictions) return "";
   const json = JSON.stringify(scenario);
   return `${SCENARIO_HASH_KEY}=${encodeBase64Url(json)}`;
 }

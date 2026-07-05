@@ -14,6 +14,7 @@ function makeRace(round: number, id?: string): Race {
     grandPrixResult: null,
     sprintResult: null,
     prediction: null,
+    sprintPrediction: null,
   };
 }
 

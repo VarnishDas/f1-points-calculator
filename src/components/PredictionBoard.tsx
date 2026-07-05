@@ -73,7 +73,8 @@ export default function PredictionBoard({
           <div className="sticky left-0 z-20 rounded border border-white/[0.06] bg-neutral-950" />
           {columns.map(({ id, race, session }) => {
             const isSprint = session === "sprint";
-            const predicted = !isSprint && race.status === "upcoming" && !!race.prediction?.length;
+            const prediction = isSprint ? race.sprintPrediction : race.prediction;
+            const predicted = race.status === "upcoming" && !!prediction?.length;
             const completed = isSprint ? !!race.sprintResult?.length : race.status === "completed";
             return (
               <div
@@ -92,15 +93,11 @@ export default function PredictionBoard({
                 </div>
                 <div className="mt-1 min-h-7 text-[10px] font-bold leading-tight text-neutral-400">
                   <span className="block truncate">{formatRaceLabel(race.name)}</span>
-                  {isSprint ? (
-                    <span className="block uppercase tracking-wide text-sky-300">
-                      Sprint
-                    </span>
-                  ) : (
-                    <span className="block uppercase tracking-wide text-neutral-600">
-                      GP
-                    </span>
-                  )}
+                  <span
+                    className={`block uppercase tracking-wide ${isSprint ? "text-sky-300" : "text-neutral-600"}`}
+                  >
+                    {isSprint ? "Sprint" : "GP"}
+                  </span>
                 </div>
                 <span
                   className={
@@ -171,20 +168,23 @@ function BoardRow({ positionIndex, columns, driverById, teamById }: BoardRowProp
                 (entry) => entry.position === positionIndex + 1,
               )
               : undefined;
-        const driverId =
-          officialEntry?.driverId ?? (!isSprint ? race.prediction?.[positionIndex] : undefined);
+        const prediction = isSprint ? race.sprintPrediction : race.prediction;
+        const driverId = officialEntry?.driverId ?? prediction?.[positionIndex];
         const driver = driverId ? driverById.get(driverId) : undefined;
         const teamId = officialEntry?.teamId ?? driver?.teamId;
         const team = teamId ? teamById.get(teamId) : undefined;
+        const isLocked =
+          race.status === "completed" || (isSprint && !!race.sprintResult?.length);
 
         return (
           <PredictionCell
             key={`${id}-${positionIndex}`}
             raceId={race.id}
+            session={session}
             positionIndex={positionIndex}
             driver={driver}
             team={team}
-            editable={!isSprint && race.status === "upcoming"}
+            editable={!isLocked}
           />
         );
       })}

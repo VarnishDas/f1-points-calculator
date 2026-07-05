@@ -4,7 +4,7 @@ import type { WdcStatus } from "../types/standings";
 import type { Team } from "../types/team";
 import type { DriverChampionshipEntry } from "./standingsAggregation";
 
-import { getPointsForPosition } from "./calculateRacePoints";
+import { getPointsForSessionPosition } from "./calculateRacePoints";
 import { getClassificationSize } from "../utils/classification";
 import {
   compareChampionshipPerformance,
@@ -23,19 +23,69 @@ function addPositionCount(
   return counts;
 }
 
-function bestAvailablePosition(
-  race: Race,
+function bestAvailableSessionPosition(
+  prediction: readonly string[] | null | undefined,
   driverId: string,
   classificationSize: number,
 ): number | null {
-  if (race.status !== "upcoming") return null;
-  if (race.prediction?.includes(driverId)) return null;
+  if (prediction?.includes(driverId)) return null;
 
   for (let index = 0; index < classificationSize; index++) {
-    if (!race.prediction?.[index]) return index + 1;
+    if (!prediction?.[index]) return index + 1;
   }
 
   return null;
+}
+
+function sessionHasEmptySlot(
+  prediction: readonly string[] | null | undefined,
+  classificationSize: number,
+): boolean {
+  for (let index = 0; index < classificationSize; index++) {
+    if (!prediction?.[index]) return true;
+  }
+  return false;
+}
+
+function applyBestCaseRace(
+  bestCase: DriverChampionshipEntry,
+  race: Race,
+  driverId: string,
+  classificationSize: number,
+): DriverChampionshipEntry {
+  if (race.status !== "upcoming") return bestCase;
+
+  let nextCase = bestCase;
+
+  const gpPosition = bestAvailableSessionPosition(
+    race.prediction,
+    driverId,
+    classificationSize,
+  );
+  if (gpPosition !== null) {
+    nextCase = {
+      ...nextCase,
+      points: nextCase.points + getPointsForSessionPosition(gpPosition, "grandPrix"),
+      positionCounts: addPositionCount(nextCase.positionCounts, gpPosition),
+    };
+  }
+
+  if (race.hasSprint) {
+    const sprintPosition = bestAvailableSessionPosition(
+      race.sprintPrediction,
+      driverId,
+      classificationSize,
+    );
+    if (sprintPosition !== null) {
+      nextCase = {
+        ...nextCase,
+        points: nextCase.points + getPointsForSessionPosition(sprintPosition, "sprint"),
+        positionCounts: addPositionCount(nextCase.positionCounts, sprintPosition),
+      };
+    }
+  }
+
+  return nextCase;
 }
 
 function canStillWinWdc(
@@ -50,20 +100,28 @@ function canStillWinWdc(
   let bestCase: DriverChampionshipEntry = { ...entry };
 
   for (const race of races) {
-    const position = bestAvailablePosition(race, driverId, classificationSize);
-    if (position === null) continue;
-
-    bestCase = {
-      ...bestCase,
-      points: bestCase.points + getPointsForPosition(position),
-      positionCounts: addPositionCount(bestCase.positionCounts, position),
-    };
+    bestCase = applyBestCaseRace(bestCase, race, driverId, classificationSize);
   }
 
   return entries.every((rival) => {
     if (rival.driverId === driverId) return true;
     return compareChampionshipPerformance(bestCase, rival) >= 0;
   });
+}
+
+function raceHasUnresolvedSlots(
+  race: Race,
+  classificationSize: number,
+): boolean {
+  if (race.status !== "upcoming") return false;
+
+  if (sessionHasEmptySlot(race.prediction, classificationSize)) return true;
+
+  if (race.hasSprint) {
+    return sessionHasEmptySlot(race.sprintPrediction, classificationSize);
+  }
+
+  return false;
 }
 
 function hasResolvedChampion(entries: readonly DriverChampionshipEntry[]): string | null {
@@ -116,11 +174,7 @@ export function calculateWdcStatus(
   const championId =
     races.every(
       (race) =>
-        race.status !== "upcoming" ||
-        !entries.some(
-          (entry) =>
-            bestAvailablePosition(race, entry.driverId, classificationSize) !== null,
-        ),
+        race.status !== "upcoming" || !raceHasUnresolvedSlots(race, classificationSize),
     )
       ? hasResolvedChampion(entries)
       : currentLeader &&

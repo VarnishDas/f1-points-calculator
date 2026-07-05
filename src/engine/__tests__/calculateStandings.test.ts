@@ -18,7 +18,7 @@ function gpResult(
   }));
 }
 
-function makeRace(partial: Omit<Race, "grandPrixResult" | "sprintResult" | "prediction"> & {
+function makeRace(partial: Omit<Race, "grandPrixResult" | "sprintResult" | "prediction" | "sprintPrediction"> & {
   result: string[];
   teamByDriver?: Record<string, string>;
   fallbackTeamId?: string;
@@ -29,6 +29,7 @@ function makeRace(partial: Omit<Race, "grandPrixResult" | "sprintResult" | "pred
     grandPrixResult: gpResult(result, teamByDriver, fallbackTeamId),
     sprintResult: null,
     prediction: null,
+    sprintPrediction: null,
   };
 }
 
@@ -306,6 +307,7 @@ describe("calculateStandings (event-specific official results)", () => {
         grandPrixResult: [{ position: 1, driverId: "reserve", teamId: "team-b" }],
         sprintResult: null,
         prediction: null,
+        sprintPrediction: null,
       },
     ];
 
@@ -339,6 +341,7 @@ describe("calculateStandings (event-specific official results)", () => {
         grandPrixResult: [{ position: 1, driverId: "switcher", teamId: "team-a" }],
         sprintResult: null,
         prediction: null,
+        sprintPrediction: null,
       },
       {
         id: "r2",
@@ -350,6 +353,7 @@ describe("calculateStandings (event-specific official results)", () => {
         grandPrixResult: [{ position: 1, driverId: "switcher", teamId: "team-b" }],
         sprintResult: null,
         prediction: null,
+        sprintPrediction: null,
       },
     ];
 
@@ -385,6 +389,7 @@ describe("calculateStandings (event-specific official results)", () => {
           { position: 9, driverId: "p9", teamId: "team-a" },
         ],
         prediction: null,
+        sprintPrediction: null,
       },
     ];
 

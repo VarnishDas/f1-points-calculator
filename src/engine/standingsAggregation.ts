@@ -95,6 +95,7 @@ function addOfficialResult(
 
 function addPredictionResult(
   prediction: readonly string[] | null,
+  session: PointsSession,
   driverToTeam: ReadonlyMap<string, string>,
   driverTotalPoints: Map<string, number>,
   driverPositionCounts: Map<string, number[]>,
@@ -110,7 +111,7 @@ function addPredictionResult(
       driverId,
       driverToTeam.get(driverId),
       position,
-      getPointsForSessionPosition(position, "grandPrix"),
+      getPointsForSessionPosition(position, session),
       driverTotalPoints,
       driverPositionCounts,
       teamTotalPoints,
@@ -154,12 +155,24 @@ export function aggregateChampionshipEntries(
     if (mode === "completedAndPredicted" && race.status === "upcoming") {
       addPredictionResult(
         race.prediction,
+        "grandPrix",
         driverToTeam,
         driverTotalPoints,
         driverPositionCounts,
         teamTotalPoints,
         teamPositionCounts,
       );
+      if (race.hasSprint) {
+        addPredictionResult(
+          race.sprintPrediction,
+          "sprint",
+          driverToTeam,
+          driverTotalPoints,
+          driverPositionCounts,
+          teamTotalPoints,
+          teamPositionCounts,
+        );
+      }
     }
   }
 

@@ -164,6 +164,7 @@ const raceSchema = z.object({
   grandPrixResult: z.array(eventResultEntrySchema).nullable(),
   sprintResult: z.array(eventResultEntrySchema).nullable().optional(),
   prediction: z.null(),
+  sprintPrediction: z.null(),
 });
 
 export function normalizeSourceId(id: string): string {
@@ -365,6 +366,7 @@ function buildRaces(
         grandPrixResult,
         sprintResult,
         prediction: null,
+        sprintPrediction: null,
       } satisfies Race;
     })
     .sort((a, b) => a.round - b.round);
@@ -443,6 +445,9 @@ export function validateGeneratedData(data: GeneratedData): void {
   for (const race of data.races) {
     if (race.prediction !== null) {
       throw new Error(`${race.id} generated data must have prediction: null`);
+    }
+    if (race.sprintPrediction !== null) {
+      throw new Error(`${race.id} generated data must have sprintPrediction: null`);
     }
     if (race.status === "completed" && !race.grandPrixResult?.length) {
       throw new Error(`${race.id} is completed but has no official GP result`);

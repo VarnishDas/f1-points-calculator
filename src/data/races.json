@@ -164,7 +164,8 @@
       }
     ],
     "sprintResult": null,
-    "prediction": null
+    "prediction": null,
+    "sprintPrediction": null
   },
   {
     "id": "chinese-2026",
@@ -486,7 +487,8 @@
         "points": 0
       }
     ],
-    "prediction": null
+    "prediction": null,
+    "sprintPrediction": null
   },
   {
     "id": "japanese-2026",
@@ -653,7 +655,8 @@
       }
     ],
     "sprintResult": null,
-    "prediction": null
+    "prediction": null,
+    "sprintPrediction": null
   },
   {
     "id": "miami-2026",
@@ -975,7 +978,8 @@
         "points": 0
       }
     ],
-    "prediction": null
+    "prediction": null,
+    "sprintPrediction": null
   },
   {
     "id": "canadian-2026",
@@ -1297,7 +1301,8 @@
         "points": 0
       }
     ],
-    "prediction": null
+    "prediction": null,
+    "sprintPrediction": null
   },
   {
     "id": "monaco-2026",
@@ -1464,7 +1469,8 @@
       }
     ],
     "sprintResult": null,
-    "prediction": null
+    "prediction": null,
+    "sprintPrediction": null
   },
   {
     "id": "barcelona-2026",
@@ -1631,7 +1637,8 @@
       }
     ],
     "sprintResult": null,
-    "prediction": null
+    "prediction": null,
+    "sprintPrediction": null
   },
   {
     "id": "austrian-2026",
@@ -1798,7 +1805,8 @@
       }
     ],
     "sprintResult": null,
-    "prediction": null
+    "prediction": null,
+    "sprintPrediction": null
   },
   {
     "id": "british-2026",
@@ -2120,7 +2128,8 @@
         "points": 0
       }
     ],
-    "prediction": null
+    "prediction": null,
+    "sprintPrediction": null
   },
   {
     "id": "belgian-2026",
@@ -2132,7 +2141,8 @@
     "hasSprint": false,
     "grandPrixResult": null,
     "sprintResult": null,
-    "prediction": null
+    "prediction": null,
+    "sprintPrediction": null
   },
   {
     "id": "hungarian-2026",
@@ -2144,7 +2154,8 @@
     "hasSprint": false,
     "grandPrixResult": null,
     "sprintResult": null,
-    "prediction": null
+    "prediction": null,
+    "sprintPrediction": null
   },
   {
     "id": "dutch-2026",
@@ -2156,7 +2167,8 @@
     "hasSprint": true,
     "grandPrixResult": null,
     "sprintResult": null,
-    "prediction": null
+    "prediction": null,
+    "sprintPrediction": null
   },
   {
     "id": "italian-2026",
@@ -2168,7 +2180,8 @@
     "hasSprint": false,
     "grandPrixResult": null,
     "sprintResult": null,
-    "prediction": null
+    "prediction": null,
+    "sprintPrediction": null
   },
   {
     "id": "spanish-2026",
@@ -2180,7 +2193,8 @@
     "hasSprint": false,
     "grandPrixResult": null,
     "sprintResult": null,
-    "prediction": null
+    "prediction": null,
+    "sprintPrediction": null
   },
   {
     "id": "azerbaijan-2026",
@@ -2192,7 +2206,8 @@
     "hasSprint": false,
     "grandPrixResult": null,
     "sprintResult": null,
-    "prediction": null
+    "prediction": null,
+    "sprintPrediction": null
   },
   {
     "id": "singapore-2026",
@@ -2204,7 +2219,8 @@
     "hasSprint": true,
     "grandPrixResult": null,
     "sprintResult": null,
-    "prediction": null
+    "prediction": null,
+    "sprintPrediction": null
   },
   {
     "id": "united-states-2026",
@@ -2216,7 +2232,8 @@
     "hasSprint": false,
     "grandPrixResult": null,
     "sprintResult": null,
-    "prediction": null
+    "prediction": null,
+    "sprintPrediction": null
   },
   {
     "id": "mexico-city-2026",
@@ -2228,7 +2245,8 @@
     "hasSprint": false,
     "grandPrixResult": null,
     "sprintResult": null,
-    "prediction": null
+    "prediction": null,
+    "sprintPrediction": null
   },
   {
     "id": "brazilian-2026",
@@ -2240,7 +2258,8 @@
     "hasSprint": false,
     "grandPrixResult": null,
     "sprintResult": null,
-    "prediction": null
+    "prediction": null,
+    "sprintPrediction": null
   },
   {
     "id": "las-vegas-2026",
@@ -2252,7 +2271,8 @@
     "hasSprint": false,
     "grandPrixResult": null,
     "sprintResult": null,
-    "prediction": null
+    "prediction": null,
+    "sprintPrediction": null
   },
   {
     "id": "qatar-2026",
@@ -2264,7 +2284,8 @@
     "hasSprint": false,
     "grandPrixResult": null,
     "sprintResult": null,
-    "prediction": null
+    "prediction": null,
+    "sprintPrediction": null
   },
   {
     "id": "abu-dhabi-2026",
@@ -2276,6 +2297,7 @@
     "hasSprint": false,
     "grandPrixResult": null,
     "sprintResult": null,
-    "prediction": null
+    "prediction": null,
+    "sprintPrediction": null
   }
 ]

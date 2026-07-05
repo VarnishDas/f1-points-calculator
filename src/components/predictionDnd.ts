@@ -1,5 +1,9 @@
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 
+import type { PredictionSessionType } from "../types/race";
+
+export type { PredictionSessionType };
+
 export type PredictionDragData =
   | {
       type: "pool-driver";
@@ -9,6 +13,7 @@ export type PredictionDragData =
       type: "prediction-driver";
       driverId: string;
       raceId: string;
+      session: PredictionSessionType;
       index: number;
     };
 
@@ -16,6 +21,7 @@ export type PredictionDropData = {
   type: "driver-pool";
 } | {
   type: "prediction-cell";
+  session: PredictionSessionType;
   raceId: string;
   index: number;
   editable: boolean;
@@ -53,4 +59,33 @@ function trimEmptyTrailingPositions(order: string[]) {
   while (order.length > 0 && order[order.length - 1] === undefined) {
     order.length -= 1;
   }
+}
+
+/**
+ * Build a unique droppable id for a prediction cell.
+ *
+ * Grand Prix and Sprint sessions for the same race share the same race id, so
+ * the session must be part of the id to avoid collisions that break DnD on
+ * sprint weekends.
+ */
+export function getPredictionDroppableId(
+  raceId: string,
+  session: PredictionSessionType,
+  positionIndex: number,
+): string {
+  return `cell:${raceId}:${session}:${positionIndex}`;
+}
+
+/**
+ * Build a unique draggable id for a predicted driver inside a cell.
+ *
+ * The same driver can be predicted in both the GP and the Sprint of the same
+ * race, so the session must be included to keep draggable ids unique.
+ */
+export function getPredictionDraggableId(
+  raceId: string,
+  session: PredictionSessionType,
+  driverId: string,
+): string {
+  return `pick:${raceId}:${session}:${driverId}`;
 }

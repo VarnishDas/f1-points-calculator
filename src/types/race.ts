@@ -1,5 +1,7 @@
 export type RaceStatus = "completed" | "upcoming";
 
+export type PredictionSessionType = "grandPrix" | "sprint";
+
 export interface EventResultEntry {
   position: number;
   driverId: string;
@@ -22,8 +24,8 @@ export interface Race {
    */
   grandPrixResult: EventResultEntry[] | null;
   /**
-   * Official sprint classification for sprint weekends. Sprint prediction UI is
-   * intentionally out of scope.
+   * Official sprint classification for sprint weekends. This is generated data
+   * and should not be mutated by user actions.
    */
   sprintResult?: EventResultEntry[] | null;
   /**
@@ -31,4 +33,9 @@ export interface Race {
    * position. User actions only mutate this field.
    */
   prediction: string[] | null;
+  /**
+   * Ordered sparse array of driver IDs by predicted Sprint finishing position.
+   * User actions only mutate this field.
+   */
+  sprintPrediction: string[] | null;
 }
