@@ -2,6 +2,7 @@ import { useMemo } from "react";
 
 import { useCalculatorStore } from "./store/useCalculatorStore";
 import { calculateProjectedStandings } from "./engine/calculateProjectedStandings";
+import { calculateWdcStatus } from "./engine/calculateWdcStatus";
 import AppHeader from "./components/AppHeader";
 import DashboardLayout from "./components/DashboardLayout";
 import PredictionWorkspace from "./components/PredictionWorkspace";
@@ -15,6 +16,10 @@ function App() {
 
   const projected = useMemo(
     () => calculateProjectedStandings(races, drivers, teams),
+    [races, drivers, teams],
+  );
+  const wdcStatusByDriverId = useMemo(
+    () => calculateWdcStatus(races, drivers, teams),
     [races, drivers, teams],
   );
   const driverStandings = projected.drivers;
@@ -34,6 +39,7 @@ function App() {
             teamStandings={teamStandings}
             drivers={drivers}
             teams={teams}
+            wdcStatusByDriverId={wdcStatusByDriverId}
           />
         }
         workspace={

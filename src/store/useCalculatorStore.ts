@@ -7,7 +7,6 @@ import type { DriverStanding, TeamStanding } from "../types/standings";
 
 import { drivers as initialDrivers, races as initialRaces, teams as initialTeams } from "../data";
 import { calculateStandings } from "../engine/calculateStandings";
-import { calculateTeamStandings } from "../engine/calculateTeamStandings";
 
 export interface CalculatorState {
   races: Race[];
@@ -61,6 +60,5 @@ export function selectDriverStandings(state: CalculatorState): DriverStanding[] 
 }
 
 export function selectTeamStandings(state: CalculatorState): TeamStanding[] {
-  const driverStandings = selectDriverStandings(state);
-  return calculateTeamStandings(driverStandings, state.drivers, state.teams);
+  return calculateStandings(state.races, state.drivers, state.teams).teams;
 }

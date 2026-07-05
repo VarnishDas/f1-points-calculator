@@ -141,3 +141,114 @@ describe("calculateStandings (tie-breaking via countback)", () => {
     expect(aPos).toBeLessThan(bPos);
   });
 });
+
+describe("calculateStandings (classification countback details)", () => {
+  it("uses P11 and lower for countback without awarding points", () => {
+    const driverIds = [
+      "p1",
+      "p2",
+      "p3",
+      "p4",
+      "p5",
+      "p6",
+      "p7",
+      "p8",
+      "p9",
+      "p10",
+      "a",
+      "b",
+    ];
+    const testDrivers: Driver[] = driverIds.map((id, index) => ({
+      id,
+      number: index + 1,
+      code: id.toUpperCase(),
+      firstName: id,
+      lastName: id,
+      teamId: "team",
+      country: "X",
+    }));
+    const testTeams: Team[] = [
+      { id: "team", name: "Team", fullName: "Team", color: "#000000" },
+    ];
+    const testRaces: Race[] = [
+      {
+        id: "classification",
+        round: 1,
+        name: "Classification",
+        circuit: "Test",
+        date: "2026-01-01",
+        status: "completed",
+        result: driverIds,
+      },
+    ];
+
+    const { drivers: standings } = calculateStandings(
+      testRaces,
+      testDrivers,
+      testTeams,
+    );
+    const a = standings.find((standing) => standing.driverId === "a");
+    const b = standings.find((standing) => standing.driverId === "b");
+
+    expect(a?.points).toBe(0);
+    expect(b?.points).toBe(0);
+    expect(a!.position).toBeLessThan(b!.position);
+  });
+
+  it("applies race countback to constructor standings", () => {
+    const testTeams: Team[] = [
+      { id: "team-a", name: "Team A", fullName: "Team A", color: "#000000" },
+      { id: "team-b", name: "Team B", fullName: "Team B", color: "#111111" },
+      { id: "fillers", name: "Fillers", fullName: "Fillers", color: "#222222" },
+    ];
+    const testDrivers: Driver[] = [
+      { id: "a1", teamId: "team-a" },
+      { id: "a2", teamId: "team-a" },
+      { id: "b1", teamId: "team-b" },
+      { id: "b2", teamId: "team-b" },
+      ...["f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8"].map((id) => ({
+        id,
+        teamId: "fillers",
+      })),
+    ].map((driver, index) => ({
+      number: index + 1,
+      code: driver.id.toUpperCase(),
+      firstName: driver.id,
+      lastName: driver.id,
+      country: "X",
+      ...driver,
+    }));
+    const testRaces: Race[] = [
+      {
+        id: "r1",
+        round: 1,
+        name: "R1",
+        circuit: "Test",
+        date: "2026-01-01",
+        status: "completed",
+        result: ["a1", "b1", "f1", "f2", "f3", "f4", "f5", "b2", "f6", "f7", "a2", "f8"],
+      },
+      {
+        id: "r2",
+        round: 2,
+        name: "R2",
+        circuit: "Test",
+        date: "2026-01-08",
+        status: "completed",
+        result: ["f1", "f2", "f3", "f4", "f5", "f6", "f7", "b1", "f8", "a1", "b2", "a2"],
+      },
+    ];
+
+    const { teams: standings } = calculateStandings(
+      testRaces,
+      testDrivers,
+      testTeams,
+    );
+    const teamA = standings.find((standing) => standing.teamId === "team-a");
+    const teamB = standings.find((standing) => standing.teamId === "team-b");
+
+    expect(teamA?.points).toBe(26);
+    expect(teamB?.points).toBe(26);
+    expect(teamA!.position).toBeLessThan(teamB!.position);
+  });
+});

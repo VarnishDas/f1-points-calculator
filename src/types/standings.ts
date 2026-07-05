@@ -1,3 +1,5 @@
+export type WdcStatus = "champion" | "inContention" | "outOfContention";
+
 export interface DriverStanding {
   driverId: string;
   position: number;

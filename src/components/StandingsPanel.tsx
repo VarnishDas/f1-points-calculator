@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import type { Driver } from "../types/driver";
 import type { Team } from "../types/team";
-import type { DriverStanding, TeamStanding } from "../types/standings";
+import type { DriverStanding, TeamStanding, WdcStatus } from "../types/standings";
 
 type StandingsMode = "drivers" | "constructors";
 
@@ -11,6 +11,7 @@ type StandingsPanelProps = {
   teamStandings: TeamStanding[];
   drivers: Driver[];
   teams: Team[];
+  wdcStatusByDriverId: Record<string, WdcStatus>;
 };
 
 export default function StandingsPanel({
@@ -18,6 +19,7 @@ export default function StandingsPanel({
   teamStandings,
   drivers,
   teams,
+  wdcStatusByDriverId,
 }: StandingsPanelProps) {
   const [mode, setMode] = useState<StandingsMode>("drivers");
   const driverById = new Map(drivers.map((driver) => [driver.id, driver]));
@@ -76,6 +78,7 @@ export default function StandingsPanel({
               {driverStandings.map((standing) => {
                 const driver = driverById.get(standing.driverId);
                 const team = driver ? teamById.get(driver.teamId) : undefined;
+                const wdcStatus = wdcStatusByDriverId[standing.driverId];
 
                 return (
                   <tr
@@ -98,6 +101,15 @@ export default function StandingsPanel({
                         <span className="truncate text-neutral-500">
                           {driver?.lastName ?? standing.driverId}
                         </span>
+                        {wdcStatus === "champion" ? (
+                          <span className="shrink-0 rounded border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-amber-300">
+                            WDC
+                          </span>
+                        ) : wdcStatus === "outOfContention" ? (
+                          <span className="shrink-0 rounded border border-white/10 bg-white/[0.03] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-neutral-500">
+                            Out
+                          </span>
+                        ) : null}
                       </div>
                     </td>
                     <td className="px-1 py-2 text-right tabular-nums text-neutral-500">
