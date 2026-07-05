@@ -13,6 +13,7 @@ export interface CalculatorState {
   drivers: Driver[];
   teams: Team[];
   updatePrediction: (raceId: string, orderedDriverIds: string[]) => void;
+  clearPredictionPosition: (raceId: string, positionIndex: number) => void;
   resetPredictions: () => void;
 }
 
@@ -39,6 +40,24 @@ export const useCalculatorStore = create<CalculatorState>()((set) => ({
       return {
         races: state.races.map((r) =>
           r.id === raceId ? { ...r, result: orderedDriverIds.slice() } : r,
+        ),
+      };
+    }),
+
+  clearPredictionPosition: (raceId, positionIndex) =>
+    set((state) => {
+      const race = state.races.find((r) => r.id === raceId);
+      if (!race || race.status !== "upcoming" || !race.result) return state;
+
+      const nextResult = race.result.slice();
+      delete nextResult[positionIndex];
+      while (nextResult.length > 0 && nextResult[nextResult.length - 1] === undefined) {
+        nextResult.length -= 1;
+      }
+
+      return {
+        races: state.races.map((r) =>
+          r.id === raceId ? { ...r, result: nextResult.length ? nextResult : null } : r,
         ),
       };
     }),

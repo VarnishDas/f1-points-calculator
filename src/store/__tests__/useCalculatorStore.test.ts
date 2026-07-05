@@ -99,6 +99,57 @@ describe("useCalculatorStore", () => {
     expect(useCalculatorStore.getState()).toBe(before);
   });
 
+  it("clearPredictionPosition removes one driver from an upcoming race", () => {
+    const upcoming = useCalculatorStore
+      .getState()
+      .races.find((r) => r.status === "upcoming");
+    if (!upcoming) throw new Error("expected at least one upcoming race");
+
+    useCalculatorStore
+      .getState()
+      .updatePrediction(upcoming.id, ["norris", "piastri", "verstappen"]);
+    useCalculatorStore.getState().clearPredictionPosition(upcoming.id, 1);
+
+    const updated = useCalculatorStore
+      .getState()
+      .races.find((r) => r.id === upcoming.id);
+    expect(updated?.result).toHaveLength(3);
+    expect(updated?.result?.[0]).toBe("norris");
+    expect(updated?.result?.[1]).toBeUndefined();
+    expect(updated?.result?.[2]).toBe("verstappen");
+  });
+
+  it("clearPredictionPosition resets an upcoming race to null when no positions remain", () => {
+    const upcoming = useCalculatorStore
+      .getState()
+      .races.find((r) => r.status === "upcoming");
+    if (!upcoming) throw new Error("expected at least one upcoming race");
+
+    useCalculatorStore.getState().updatePrediction(upcoming.id, ["norris"]);
+    useCalculatorStore.getState().clearPredictionPosition(upcoming.id, 0);
+
+    const updated = useCalculatorStore
+      .getState()
+      .races.find((r) => r.id === upcoming.id);
+    expect(updated?.result).toBeNull();
+  });
+
+  it("clearPredictionPosition does not modify completed races", () => {
+    const completed = useCalculatorStore
+      .getState()
+      .races.find((r) => r.status === "completed");
+    if (!completed) throw new Error("expected at least one completed race");
+    const originalResult = completed.result ? [...completed.result] : null;
+
+    useCalculatorStore.getState().clearPredictionPosition(completed.id, 0);
+
+    const after = useCalculatorStore
+      .getState()
+      .races.find((r) => r.id === completed.id);
+    expect(after?.status).toBe("completed");
+    expect(after?.result).toEqual(originalResult);
+  });
+
   it("resetPredictions clears upcoming race predictions but preserves completed results", () => {
     const state = useCalculatorStore.getState();
     const upcoming = state.races.find((r) => r.status === "upcoming");

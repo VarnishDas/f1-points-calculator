@@ -25,7 +25,6 @@ type PredictionWorkspaceProps = {
   races: Race[];
   drivers: Driver[];
   teams: Team[];
-  driverOrder: string[];
   onClear: () => void;
 };
 
@@ -33,10 +32,12 @@ export default function PredictionWorkspace({
   races,
   drivers,
   teams,
-  driverOrder,
   onClear,
 }: PredictionWorkspaceProps) {
   const updatePrediction = useCalculatorStore((state) => state.updatePrediction);
+  const clearPredictionPosition = useCalculatorStore(
+    (state) => state.clearPredictionPosition,
+  );
   const [activeDrag, setActiveDrag] = useState<PredictionDragData | null>(null);
   const driverById = useMemo(
     () => new Map(drivers.map((driver) => [driver.id, driver])),
@@ -57,9 +58,21 @@ export default function PredictionWorkspace({
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveDrag(null);
     const { active, over } = getPredictionDragPayload(event);
-    if (!active || !over || over.type !== "prediction-cell" || !over.editable) {
+    if (!active || !over) {
       return;
     }
+
+    if (over.type === "driver-pool") {
+      if (active.type === "prediction-driver") {
+        const sourceRace = races.find((race) => race.id === active.raceId);
+        if (sourceRace?.status === "upcoming") {
+          clearPredictionPosition(active.raceId, active.index);
+        }
+      }
+      return;
+    }
+
+    if (!over.editable) return;
 
     const targetRace = races.find((race) => race.id === over.raceId);
     if (!targetRace || targetRace.status !== "upcoming") return;
@@ -80,12 +93,6 @@ export default function PredictionWorkspace({
     updatePrediction(targetRace.id, nextOrder);
   };
 
-  const handleAutoFill = () => {
-    races.forEach((race) => {
-      if (race.status === "upcoming") updatePrediction(race.id, driverOrder);
-    });
-  };
-
   return (
     <div className="flex min-w-0 flex-col gap-3 lg:min-h-0 lg:overflow-hidden">
       <DndContext
@@ -100,7 +107,6 @@ export default function PredictionWorkspace({
           drivers={drivers}
           teams={teams}
           onClear={onClear}
-          onAutoFill={handleAutoFill}
         />
         <DragOverlay dropAnimation={null}>
           {activeDriver ? (

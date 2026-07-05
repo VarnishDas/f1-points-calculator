@@ -13,6 +13,8 @@ export type PredictionDragData =
     };
 
 export type PredictionDropData = {
+  type: "driver-pool";
+} | {
   type: "prediction-cell";
   raceId: string;
   index: number;

@@ -24,10 +24,6 @@ function App() {
   );
   const driverStandings = projected.drivers;
   const teamStandings = projected.teams;
-  const driverOrder = useMemo(
-    () => projected.drivers.map((standing) => standing.driverId),
-    [projected],
-  );
 
   return (
     <main className="flex min-h-screen flex-col overflow-y-auto bg-neutral-950 text-neutral-100 lg:h-screen lg:min-h-0 lg:overflow-hidden">
@@ -47,7 +43,6 @@ function App() {
             races={races}
             drivers={drivers}
             teams={teams}
-            driverOrder={driverOrder}
             onClear={resetPredictions}
           />
         }

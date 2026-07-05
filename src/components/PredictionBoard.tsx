@@ -25,7 +25,6 @@ type PredictionBoardProps = {
   drivers: Driver[];
   teams: Team[];
   onClear: () => void;
-  onAutoFill: () => void;
 };
 
 export default function PredictionBoard({
@@ -33,7 +32,6 @@ export default function PredictionBoard({
   drivers,
   teams,
   onClear,
-  onAutoFill,
 }: PredictionBoardProps) {
   const sortedRaces = sortRacesByRound(races);
   const driverById = new Map(drivers.map((driver) => [driver.id, driver]));
@@ -121,13 +119,6 @@ export default function PredictionBoard({
             className="h-9 rounded-md border border-white/10 bg-white/[0.03] px-3 text-xs font-bold text-neutral-300 transition hover:border-white/20 hover:bg-white/[0.07]"
           >
             Clear Board
-          </button>
-          <button
-            type="button"
-            onClick={onAutoFill}
-            className="h-9 rounded-md border border-white/10 bg-white/[0.03] px-3 text-xs font-bold text-neutral-300 transition hover:border-white/20 hover:bg-white/[0.07]"
-          >
-            Auto Fill
           </button>
         </div>
       </div>
