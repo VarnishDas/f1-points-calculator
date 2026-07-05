@@ -7,7 +7,9 @@
 html,
 body {
   margin: 0;
-  background-color: #0a0a0f;
+  background:
+    radial-gradient(circle at 50% -20%, rgba(220, 38, 38, 0.12), transparent 36rem),
+    linear-gradient(180deg, #090a0d 0%, #050608 100%);
   color: #f3f4f6;
   font-family: system-ui, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
