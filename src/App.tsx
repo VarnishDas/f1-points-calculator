@@ -6,6 +6,7 @@ import { calculateWdcStatus } from "./engine/calculateWdcStatus";
 import { useShareableUrl } from "./hooks/useShareableUrl";
 import AppHeader from "./components/AppHeader";
 import DashboardLayout from "./components/DashboardLayout";
+import Footer from "./components/Footer";
 import PredictionWorkspace from "./components/PredictionWorkspace";
 import StandingsPanel from "./components/StandingsPanel";
 
@@ -50,6 +51,7 @@ function App() {
           />
         }
       />
+      <Footer />
     </main>
   );
 }

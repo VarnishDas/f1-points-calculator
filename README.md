@@ -73,3 +73,11 @@ export default defineConfig([
 ])
 
 ```
+
+## Data attribution
+
+Formula 1 data is provided by [Jolpica-F1](https://github.com/jolpica/jolpica-f1), using its Ergast-compatible API.
+
+The data is licensed under [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+
+This project transforms the source API data into local JSON files for use in the calculator.
