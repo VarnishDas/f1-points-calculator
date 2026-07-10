@@ -38,11 +38,6 @@ type SourceDriverStanding = {
   Constructors: SourceConstructor[];
 };
 
-type SourceDriverConstructors = {
-  driverId: string;
-  Constructors: SourceConstructor[];
-};
-
 type SourceRace = {
   season: string;
   round: string;
@@ -102,7 +97,6 @@ export type SourceData = {
   drivers: SourceDriver[];
   constructors: SourceConstructor[];
   driverStandings: SourceDriverStanding[];
-  driverConstructorHistory: SourceDriverConstructors[];
 };
 
 const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -278,16 +272,6 @@ function latestTeamByDriver(
 ): Map<string, string> {
   const teamByDriver = new Map<string, string>();
 
-  for (const history of source.driverConstructorHistory) {
-    const latestConstructor = history.Constructors.at(-1);
-    if (latestConstructor) {
-      teamByDriver.set(
-        resolveDriverId(history.driverId),
-        resolveTeamId(latestConstructor.constructorId),
-      );
-    }
-  }
-
   for (const standing of source.driverStandings) {
     const latestConstructor = standing.Constructors.at(-1);
     if (latestConstructor) {
@@ -326,7 +310,6 @@ function buildTeams(
   const existingById = new Map(existing.teams.map((team) => [team.id, team]));
   const constructors = [
     ...source.constructors,
-    ...source.driverConstructorHistory.flatMap((history) => history.Constructors),
     ...source.driverStandings.flatMap((standing) => standing.Constructors),
     ...collectConstructorsFromResults(source.grandPrixResults),
     ...collectConstructorsFromResults(source.sprintResults),
@@ -371,11 +354,22 @@ function buildDrivers(
     ...collectDriversFromResults(source.grandPrixResults),
     ...collectDriversFromResults(source.sprintResults),
   ]) {
-    sourceDriverById.set(resolveDriverId(sourceDriver.driverId), sourceDriver);
+    const id = resolveDriverId(sourceDriver.driverId);
+    const previous = sourceDriverById.get(id);
+    sourceDriverById.set(id, {
+      ...previous,
+      ...sourceDriver,
+      permanentNumber:
+        sourceDriver.permanentNumber ?? previous?.permanentNumber,
+      code: sourceDriver.code?.trim() || previous?.code,
+      nationality: sourceDriver.nationality ?? previous?.nationality,
+    });
   }
 
   const requiredDriverIds = new Set([
-    ...sourceDriverById.keys(),
+    ...source.driverStandings.map((standing) =>
+      resolveDriverId(standing.Driver.driverId),
+    ),
     ...racedDriverIds,
   ]);
 
@@ -675,22 +669,6 @@ async function fetchSourceData(season: number): Promise<SourceData> {
   const seasonDrivers = drivers.MRData?.DriverTable?.Drivers ?? [];
   const driverStandings =
     standings.MRData?.StandingsTable?.StandingsLists?.at(-1)?.DriverStandings ?? [];
-  const standingDriverIds = new Set(
-    driverStandings.map((standing) => standing.Driver.driverId),
-  );
-
-  const driverConstructorHistory: SourceDriverConstructors[] = [];
-  for (const driver of seasonDrivers) {
-    if (standingDriverIds.has(driver.driverId)) continue;
-    const response = await fetchJson(
-      `${DATA_SOURCE_BASE_URL}/${season}/drivers/${driver.driverId}/constructors.json?limit=1000`,
-    );
-    driverConstructorHistory.push({
-      driverId: driver.driverId,
-      Constructors: response.MRData?.ConstructorTable?.Constructors ?? [],
-    });
-    await sleep(100);
-  }
 
   const grandPrixResults: JolpicaResponse[] = [];
   const sprintResults: JolpicaResponse[] = [];
@@ -714,7 +692,6 @@ async function fetchSourceData(season: number): Promise<SourceData> {
     drivers: seasonDrivers,
     constructors: constructors.MRData?.ConstructorTable?.Constructors ?? [],
     driverStandings,
-    driverConstructorHistory,
   };
 }
 

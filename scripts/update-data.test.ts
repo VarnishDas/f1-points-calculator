@@ -93,7 +93,6 @@ const source: SourceData = {
           Driver: {
             driverId: "max_verstappen",
             permanentNumber: "1",
-            code: "VER",
             givenName: "Max",
             familyName: "Verstappen",
             nationality: "Dutch",
@@ -107,7 +106,6 @@ const source: SourceData = {
           status: "Finished",
           Driver: {
             driverId: "reserve_driver",
-            code: "RES",
             givenName: "Reserve",
             familyName: "Driver",
             nationality: "British",
@@ -132,7 +130,6 @@ const source: SourceData = {
           status: "Finished",
           Driver: {
             driverId: "reserve_driver",
-            code: "RES",
             givenName: "Reserve",
             familyName: "Driver",
             nationality: "British",
@@ -175,12 +172,6 @@ const source: SourceData = {
         familyName: "Verstappen",
         nationality: "Dutch",
       },
-      Constructors: [{ constructorId: "red_bull", name: "Red Bull" }],
-    },
-  ],
-  driverConstructorHistory: [
-    {
-      driverId: "fp_only_driver",
       Constructors: [{ constructorId: "red_bull", name: "Red Bull" }],
     },
   ],
@@ -241,13 +232,10 @@ describe("transformSourceData", () => {
     });
     expect(generated.drivers.find((driver) => driver.id === "reserve-driver")).toMatchObject({
       number: null,
-      code: "RES",
+      code: "Driver",
       teamId: "newcomer",
     });
-    expect(generated.drivers.find((driver) => driver.id === "fp-only-driver")).toMatchObject({
-      code: "Only",
-      teamId: "red-bull",
-    });
+    expect(generated.drivers.map((driver) => driver.id)).not.toContain("fp-only-driver");
     expect(generated.drivers.map((driver) => driver.id)).not.toContain("unraced-existing");
     expect(generated.teams.find((team) => team.id === "red-bull")?.color).toBe("#3671C6");
     expect(generated.teams.find((team) => team.id === "newcomer")).toMatchObject({
@@ -265,8 +253,21 @@ describe("transformSourceData", () => {
       "2026-07-05T00:00:00.000Z",
     );
 
-    expect(generated.drivers.find((driver) => driver.id === "fp-only-driver")?.code)
-      .toBe("Only");
+    expect(generated.drivers.find((driver) => driver.id === "reserve-driver")?.code)
+      .toBe("Driver");
+    expect(generated.drivers.find((driver) => driver.id === "verstappen")?.code)
+      .toBe("VER");
+  });
+
+  it("does not admit practice-only drivers from the season driver endpoint", () => {
+    const generated = transformSourceData(
+      source,
+      existing,
+      2026,
+      "2026-07-05T00:00:00.000Z",
+    );
+
+    expect(generated.drivers.map((driver) => driver.id)).not.toContain("fp-only-driver");
   });
 
   it("tracks a mid-season replacement's latest team without changing old results", () => {
@@ -295,7 +296,6 @@ describe("transformSourceData", () => {
             ],
           },
         ],
-        driverConstructorHistory: [],
         grandPrixResults: source.calendar.map((race, index) => ({
           ...race,
           Results: [

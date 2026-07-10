@@ -40,16 +40,6 @@
     "country": "British"
   },
   {
-    "id": "ayumu-iwasa",
-    "sourceId": "ayumu_iwasa",
-    "number": null,
-    "code": "Iwasa",
-    "firstName": "Ayumu",
-    "lastName": "Iwasa",
-    "teamId": "red-bull",
-    "country": "Unknown"
-  },
-  {
     "id": "bearman",
     "sourceId": "bearman",
     "number": 87,
@@ -88,36 +78,6 @@
     "lastName": "Colapinto",
     "teamId": "alpine",
     "country": "Argentine"
-  },
-  {
-    "id": "colton-herta",
-    "sourceId": "colton_herta",
-    "number": null,
-    "code": "Herta",
-    "firstName": "Colton",
-    "lastName": "Herta",
-    "teamId": "cadillac",
-    "country": "Unknown"
-  },
-  {
-    "id": "dino-beganovic",
-    "sourceId": "dino_beganovic",
-    "number": null,
-    "code": "Beganovic",
-    "firstName": "Dino",
-    "lastName": "Beganovic",
-    "teamId": "ferrari",
-    "country": "Unknown"
-  },
-  {
-    "id": "frederik-vesti",
-    "sourceId": "frederik_vesti",
-    "number": null,
-    "code": "Vesti",
-    "firstName": "Frederik",
-    "lastName": "Vesti",
-    "teamId": "mercedes",
-    "country": "Unknown"
   },
   {
     "id": "gasly",
@@ -160,16 +120,6 @@
     "country": "German"
   },
   {
-    "id": "jak-crawford",
-    "sourceId": "jak_crawford",
-    "number": null,
-    "code": "Crawford",
-    "firstName": "Jak",
-    "lastName": "Crawford",
-    "teamId": "aston-martin",
-    "country": "Unknown"
-  },
-  {
     "id": "lawson",
     "sourceId": "lawson",
     "number": 30,
@@ -190,26 +140,6 @@
     "country": "Monegasque"
   },
   {
-    "id": "leonardo-fornaroli",
-    "sourceId": "leonardo_fornaroli",
-    "number": null,
-    "code": "Fornaroli",
-    "firstName": "Leonardo",
-    "lastName": "Fornaroli",
-    "teamId": "mclaren",
-    "country": "Unknown"
-  },
-  {
-    "id": "luke-browning",
-    "sourceId": "luke_browning",
-    "number": null,
-    "code": "Browning",
-    "firstName": "Luke",
-    "lastName": "Browning",
-    "teamId": "williams",
-    "country": "Unknown"
-  },
-  {
     "id": "norris",
     "sourceId": "norris",
     "number": 1,
@@ -228,16 +158,6 @@
     "lastName": "Ocon",
     "teamId": "haas",
     "country": "French"
-  },
-  {
-    "id": "paul-aron",
-    "sourceId": "paul_aron",
-    "number": null,
-    "code": "Aron",
-    "firstName": "Paul",
-    "lastName": "Aron",
-    "teamId": "audi",
-    "country": "Unknown"
   },
   {
     "id": "perez",
@@ -268,16 +188,6 @@
     "lastName": "Russell",
     "teamId": "mercedes",
     "country": "British"
-  },
-  {
-    "id": "ryo-hirakawa",
-    "sourceId": "ryo_hirakawa",
-    "number": null,
-    "code": "Hirakawa",
-    "firstName": "Ryo",
-    "lastName": "Hirakawa",
-    "teamId": "haas",
-    "country": "Unknown"
   },
   {
     "id": "sainz",
