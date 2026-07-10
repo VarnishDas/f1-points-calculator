@@ -7,7 +7,7 @@
     "firstName": "Alexander",
     "lastName": "Albon",
     "teamId": "williams",
-    "country": "THA"
+    "country": "Thai"
   },
   {
     "id": "alonso",
@@ -17,7 +17,7 @@
     "firstName": "Fernando",
     "lastName": "Alonso",
     "teamId": "aston-martin",
-    "country": "ESP"
+    "country": "Spanish"
   },
   {
     "id": "antonelli",
@@ -27,7 +27,7 @@
     "firstName": "Andrea Kimi",
     "lastName": "Antonelli",
     "teamId": "mercedes",
-    "country": "ITA"
+    "country": "Italian"
   },
   {
     "id": "arvid-lindblad",
@@ -47,7 +47,7 @@
     "firstName": "Oliver",
     "lastName": "Bearman",
     "teamId": "haas",
-    "country": "GBR"
+    "country": "British"
   },
   {
     "id": "bortoleto",
@@ -57,7 +57,7 @@
     "firstName": "Gabriel",
     "lastName": "Bortoleto",
     "teamId": "audi",
-    "country": "BRA"
+    "country": "Brazilian"
   },
   {
     "id": "bottas",
@@ -87,7 +87,7 @@
     "firstName": "Pierre",
     "lastName": "Gasly",
     "teamId": "alpine",
-    "country": "FRA"
+    "country": "French"
   },
   {
     "id": "hadjar",
@@ -97,7 +97,7 @@
     "firstName": "Isack",
     "lastName": "Hadjar",
     "teamId": "red-bull",
-    "country": "FRA"
+    "country": "French"
   },
   {
     "id": "hamilton",
@@ -107,7 +107,7 @@
     "firstName": "Lewis",
     "lastName": "Hamilton",
     "teamId": "ferrari",
-    "country": "GBR"
+    "country": "British"
   },
   {
     "id": "hulkenberg",
@@ -117,7 +117,7 @@
     "firstName": "Nico",
     "lastName": "Hülkenberg",
     "teamId": "audi",
-    "country": "GER"
+    "country": "German"
   },
   {
     "id": "lawson",
@@ -127,7 +127,7 @@
     "firstName": "Liam",
     "lastName": "Lawson",
     "teamId": "racing-bulls",
-    "country": "NZL"
+    "country": "New Zealander"
   },
   {
     "id": "leclerc",
@@ -137,7 +137,7 @@
     "firstName": "Charles",
     "lastName": "Leclerc",
     "teamId": "ferrari",
-    "country": "MON"
+    "country": "Monegasque"
   },
   {
     "id": "norris",
@@ -147,7 +147,7 @@
     "firstName": "Lando",
     "lastName": "Norris",
     "teamId": "mclaren",
-    "country": "GBR"
+    "country": "British"
   },
   {
     "id": "ocon",
@@ -157,7 +157,7 @@
     "firstName": "Esteban",
     "lastName": "Ocon",
     "teamId": "haas",
-    "country": "FRA"
+    "country": "French"
   },
   {
     "id": "perez",
@@ -177,7 +177,7 @@
     "firstName": "Oscar",
     "lastName": "Piastri",
     "teamId": "mclaren",
-    "country": "AUS"
+    "country": "Australian"
   },
   {
     "id": "russell",
@@ -187,7 +187,7 @@
     "firstName": "George",
     "lastName": "Russell",
     "teamId": "mercedes",
-    "country": "GBR"
+    "country": "British"
   },
   {
     "id": "sainz",
@@ -197,7 +197,7 @@
     "firstName": "Carlos",
     "lastName": "Sainz",
     "teamId": "williams",
-    "country": "ESP"
+    "country": "Spanish"
   },
   {
     "id": "stroll",
@@ -207,7 +207,7 @@
     "firstName": "Lance",
     "lastName": "Stroll",
     "teamId": "aston-martin",
-    "country": "CAN"
+    "country": "Canadian"
   },
   {
     "id": "verstappen",
@@ -217,6 +217,6 @@
     "firstName": "Max",
     "lastName": "Verstappen",
     "teamId": "red-bull",
-    "country": "NED"
+    "country": "Dutch"
   }
 ]

@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
   getCalendarChanges,
   normalizeSourceId,
-  normalizeTeamId,
   transformSourceData,
   validateGeneratedData,
   type ExistingData,
@@ -12,11 +11,6 @@ import {
 } from "./update-data.js";
 
 const existing: ExistingData = {
-  activeDrivers: [
-    { sourceId: "max_verstappen", teamId: "red-bull" },
-    { sourceId: "fp_only_driver", teamId: "red-bull" },
-    { sourceId: "unraced_existing", teamId: "red-bull" },
-  ],
   drivers: [
     {
       id: "unraced-existing",
@@ -55,11 +49,11 @@ const existing: ExistingData = {
       color: "#6692FF",
     },
     {
-      id: "audi",
-      sourceId: "sauber",
-      name: "Audi",
-      fullName: "Audi F1 Team",
-      color: "#BB0A1E",
+      id: "legacy-team",
+      sourceId: "legacy_team",
+      name: "Legacy Team",
+      fullName: "Legacy Team",
+      color: "#111111",
     },
   ],
   races: [],
@@ -99,7 +93,6 @@ const source: SourceData = {
           Driver: {
             driverId: "max_verstappen",
             permanentNumber: "1",
-            code: "VER",
             givenName: "Max",
             familyName: "Verstappen",
             nationality: "Dutch",
@@ -113,12 +106,11 @@ const source: SourceData = {
           status: "Finished",
           Driver: {
             driverId: "reserve_driver",
-            code: "RES",
             givenName: "Reserve",
             familyName: "Driver",
             nationality: "British",
           },
-          Constructor: { constructorId: "sauber", name: "Kick Sauber" },
+          Constructor: { constructorId: "newcomer", name: "Newcomer Racing" },
         },
       ],
     },
@@ -138,7 +130,6 @@ const source: SourceData = {
           status: "Finished",
           Driver: {
             driverId: "reserve_driver",
-            code: "RES",
             givenName: "Reserve",
             familyName: "Driver",
             nationality: "British",
@@ -169,21 +160,33 @@ const source: SourceData = {
   constructors: [
     { constructorId: "red_bull", name: "Red Bull" },
     { constructorId: "rb", name: "RB" },
-    { constructorId: "sauber", name: "Kick Sauber" },
+    { constructorId: "newcomer", name: "Newcomer Racing" },
+  ],
+  driverStandings: [
+    {
+      Driver: {
+        driverId: "max_verstappen",
+        permanentNumber: "1",
+        code: "VER",
+        givenName: "Max",
+        familyName: "Verstappen",
+        nationality: "Dutch",
+      },
+      Constructors: [{ constructorId: "red_bull", name: "Red Bull" }],
+    },
   ],
 };
 
 describe("update-data identifiers", () => {
-  it("normalizes unknown source ids without driver-name aliases", () => {
+  it("normalizes source ids without driver or team aliases", () => {
     expect(normalizeSourceId("new_reserve_driver")).toBe("new-reserve-driver");
-    expect(normalizeTeamId("red_bull")).toBe("red-bull");
-    expect(normalizeTeamId("rb")).toBe("racing-bulls");
-    expect(normalizeTeamId("sauber")).toBe("audi");
+    expect(normalizeSourceId("new_constructor")).toBe("new-constructor");
+    expect(normalizeSourceId("sauber")).toBe("sauber");
   });
 });
 
 describe("transformSourceData", () => {
-  it("transforms results, resolves existing source ids, and admits new drivers", () => {
+  it("derives new drivers and teams from standings and results", () => {
     const generated = transformSourceData(source, existing, 2026, "2026-07-05T00:00:00.000Z");
 
     expect(generated.races).toHaveLength(2);
@@ -206,7 +209,7 @@ describe("transformSourceData", () => {
       {
         position: 2,
         driverId: "reserve-driver",
-        teamId: "audi",
+        teamId: "newcomer",
         status: "Finished",
         points: 18,
       },
@@ -229,16 +232,97 @@ describe("transformSourceData", () => {
     });
     expect(generated.drivers.find((driver) => driver.id === "reserve-driver")).toMatchObject({
       number: null,
-      code: "RES",
-      teamId: "racing-bulls",
+      code: "Driver",
+      teamId: "newcomer",
     });
-    expect(generated.drivers.find((driver) => driver.id === "fp-only-driver")).toMatchObject({
-      code: "Only",
-      teamId: "red-bull",
-    });
-    expect(generated.drivers.map((driver) => driver.id)).toContain("unraced-existing");
+    expect(generated.drivers.map((driver) => driver.id)).not.toContain("fp-only-driver");
+    expect(generated.drivers.map((driver) => driver.id)).not.toContain("unraced-existing");
     expect(generated.teams.find((team) => team.id === "red-bull")?.color).toBe("#3671C6");
-    expect(generated.teams.find((team) => team.id === "audi")?.name).toBe("Audi");
+    expect(generated.teams.find((team) => team.id === "newcomer")).toMatchObject({
+      name: "Newcomer Racing",
+      color: "#737373",
+    });
+    expect(generated.teams.map((team) => team.id)).not.toContain("legacy-team");
+  });
+
+  it("uses a driver's last name when Jolpica has no reliable code", () => {
+    const generated = transformSourceData(
+      source,
+      existing,
+      2026,
+      "2026-07-05T00:00:00.000Z",
+    );
+
+    expect(generated.drivers.find((driver) => driver.id === "reserve-driver")?.code)
+      .toBe("Driver");
+    expect(generated.drivers.find((driver) => driver.id === "verstappen")?.code)
+      .toBe("VER");
+  });
+
+  it("does not admit practice-only drivers from the season driver endpoint", () => {
+    const generated = transformSourceData(
+      source,
+      existing,
+      2026,
+      "2026-07-05T00:00:00.000Z",
+    );
+
+    expect(generated.drivers.map((driver) => driver.id)).not.toContain("fp-only-driver");
+  });
+
+  it("tracks a mid-season replacement's latest team without changing old results", () => {
+    const replacement = {
+      driverId: "replacement_driver",
+      code: "REP",
+      givenName: "Replacement",
+      familyName: "Driver",
+      nationality: "British",
+    };
+    const generated = transformSourceData(
+      {
+        ...source,
+        calendar: source.calendar.map((race) => ({ ...race, Sprint: undefined })),
+        drivers: [replacement],
+        constructors: [
+          { constructorId: "old_team", name: "Old Team" },
+          { constructorId: "new_team", name: "New Team" },
+        ],
+        driverStandings: [
+          {
+            Driver: replacement,
+            Constructors: [
+              { constructorId: "old_team", name: "Old Team" },
+              { constructorId: "new_team", name: "New Team" },
+            ],
+          },
+        ],
+        grandPrixResults: source.calendar.map((race, index) => ({
+          ...race,
+          Results: [
+            {
+              position: "1",
+              positionOrder: "1",
+              Driver: replacement,
+              Constructor: index === 0
+                ? { constructorId: "old_team", name: "Old Team" }
+                : { constructorId: "new_team", name: "New Team" },
+            },
+          ],
+        })),
+        sprintResults: [],
+      },
+      { drivers: [], teams: [], races: [] },
+      2026,
+      "2026-07-05T00:00:00.000Z",
+    );
+
+    expect(generated.drivers[0]).toMatchObject({
+      id: "replacement-driver",
+      teamId: "new-team",
+    });
+    expect(generated.races[0].grandPrixResult?.[0].teamId).toBe("old-team");
+    expect(generated.races[1].grandPrixResult?.[0].teamId).toBe("new-team");
+    expect(generated.teams.map((team) => team.id)).toEqual(["new-team", "old-team"]);
   });
 
   it("derives race ids from API race names instead of preserving old round ids", () => {
@@ -310,6 +394,49 @@ describe("transformSourceData", () => {
       { position: 1, driverId: "verstappen", teamId: "red-bull" },
     ]);
     expect(generated.metadata.warnings[0]).toContain("Preserved previous round 1");
+  });
+
+  it("preserves drivers and teams referenced only by a retained official result", () => {
+    const historicalDriver = {
+      id: "historical-driver",
+      sourceId: "historical_driver",
+      number: null,
+      code: "Historical",
+      firstName: "Historical",
+      lastName: "Driver",
+      teamId: "legacy-team",
+      country: "Unknown",
+    };
+    const generated = transformSourceData(
+      { ...source, grandPrixResults: [], sprintResults: [] },
+      {
+        ...existing,
+        drivers: [...existing.drivers, historicalDriver],
+        races: [
+          {
+            id: "bahrain-2026",
+            round: 1,
+            name: "Bahrain Grand Prix",
+            circuit: "Bahrain International Circuit",
+            date: "2026-03-08",
+            status: "completed",
+            grandPrixResult: [
+              { position: 1, driverId: "historical-driver", teamId: "legacy-team" },
+            ],
+            sprintResult: null,
+            prediction: null,
+            sprintPrediction: null,
+          },
+        ],
+      },
+      2026,
+      "2026-07-05T00:00:00.000Z",
+    );
+
+    expect(generated.drivers.find((driver) => driver.id === "historical-driver"))
+      .toMatchObject({ ...historicalDriver, code: "Driver" });
+    expect(generated.teams.find((team) => team.id === "legacy-team")?.name)
+      .toBe("Legacy Team");
   });
 
   it("preserves previous Sprint results when the source omits them", () => {

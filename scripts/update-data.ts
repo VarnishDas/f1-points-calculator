@@ -5,7 +5,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { z } from "zod";
 
 import { APP_SEASON, DATA_SOURCE_BASE_URL } from "../src/config/season.js";
-import type { ActiveDriver, Driver } from "../src/types/driver.js";
+import type { Driver } from "../src/types/driver.js";
 import type { EventResultEntry, Race } from "../src/types/race.js";
 import type { Team } from "../src/types/team.js";
 
@@ -33,6 +33,11 @@ type SourceResult = {
   Constructor: SourceConstructor;
 };
 
+type SourceDriverStanding = {
+  Driver: SourceDriver;
+  Constructors: SourceConstructor[];
+};
+
 type SourceRace = {
   season: string;
   round: string;
@@ -57,6 +62,11 @@ type JolpicaResponse = {
     ConstructorTable?: {
       Constructors?: SourceConstructor[];
     };
+    StandingsTable?: {
+      StandingsLists?: Array<{
+        DriverStandings?: SourceDriverStanding[];
+      }>;
+    };
   };
 };
 
@@ -75,7 +85,6 @@ export type GeneratedData = {
 };
 
 export type ExistingData = {
-  activeDrivers: ActiveDriver[];
   drivers: Driver[];
   teams: Team[];
   races: Race[];
@@ -87,18 +96,11 @@ export type SourceData = {
   sprintResults: SourceRace[];
   drivers: SourceDriver[];
   constructors: SourceConstructor[];
+  driverStandings: SourceDriverStanding[];
 };
 
 const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DATA_DIR = path.join(ROOT_DIR, "src", "data");
-
-const TEAM_ID_ALIASES: Record<string, string> = {
-  red_bull: "red-bull",
-  rb: "racing-bulls",
-  racing_bulls: "racing-bulls",
-  sauber: "audi",
-  kick_sauber: "audi",
-};
 
 const DEFAULT_TEAM_COLOR = "#737373";
 
@@ -119,11 +121,6 @@ const driverSchema = z.object({
   lastName: z.string().min(1),
   teamId: z.string().min(1),
   country: z.string().min(1),
-});
-
-const activeDriverSchema = z.object({
-  sourceId: z.string().min(1),
-  teamId: z.string().min(1),
 });
 
 const teamSchema = z.object({
@@ -157,10 +154,6 @@ export function normalizeSourceId(id: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export function normalizeTeamId(sourceId: string): string {
-  return TEAM_ID_ALIASES[sourceId] ?? normalizeSourceId(sourceId);
-}
-
 function parseNumber(value: string | undefined): number | undefined {
   if (value === undefined || value === "") return undefined;
   const parsed = Number(value);
@@ -175,9 +168,9 @@ function raceIdFromName(name: string, season: number): string {
   return `${normalizeSourceId(name.replace(/\bGrand Prix\b/i, "").trim())}-${season}`;
 }
 
-type DriverIdResolver = (sourceId: string) => string;
+type SourceIdResolver = (sourceId: string) => string;
 
-function createDriverIdResolver(existingDrivers: readonly Driver[]): DriverIdResolver {
+function createDriverIdResolver(existingDrivers: readonly Driver[]): SourceIdResolver {
   const existingIdBySourceId = new Map(
     existingDrivers.flatMap((driver) =>
       driver.sourceId ? [[driver.sourceId, driver.id] as const] : [],
@@ -186,16 +179,26 @@ function createDriverIdResolver(existingDrivers: readonly Driver[]): DriverIdRes
   return (sourceId) => existingIdBySourceId.get(sourceId) ?? normalizeSourceId(sourceId);
 }
 
+function createTeamIdResolver(existingTeams: readonly Team[]): SourceIdResolver {
+  const existingIdBySourceId = new Map(
+    existingTeams.flatMap((team) =>
+      team.sourceId ? [[team.sourceId, team.id] as const] : [],
+    ),
+  );
+  return (sourceId) => existingIdBySourceId.get(sourceId) ?? normalizeSourceId(sourceId);
+}
+
 function sourceResultToEntry(
   result: SourceResult,
-  resolveDriverId: DriverIdResolver,
+  resolveDriverId: SourceIdResolver,
+  resolveTeamId: SourceIdResolver,
 ): EventResultEntry {
   const position = parseNumber(result.positionOrder) ?? parseNumber(result.position) ?? 0;
   const points = parseNumber(result.points);
   return {
     position,
     driverId: resolveDriverId(result.Driver.driverId),
-    teamId: normalizeTeamId(result.Constructor.constructorId),
+    teamId: resolveTeamId(result.Constructor.constructorId),
     status: result.status,
     ...(points === undefined ? {} : { points }),
   };
@@ -204,7 +207,8 @@ function sourceResultToEntry(
 function resultMapByRound(
   races: readonly SourceRace[],
   field: "Results" | "SprintResults",
-  resolveDriverId: DriverIdResolver,
+  resolveDriverId: SourceIdResolver,
+  resolveTeamId: SourceIdResolver,
 ) {
   const map = new Map<number, EventResultEntry[]>();
   for (const race of races) {
@@ -214,7 +218,7 @@ function resultMapByRound(
     map.set(
       round,
       rawResults
-        .map((result) => sourceResultToEntry(result, resolveDriverId))
+        .map((result) => sourceResultToEntry(result, resolveDriverId, resolveTeamId))
         .sort((a, b) => a.position - b.position),
     );
   }
@@ -241,6 +245,16 @@ function collectDriverIdsFromRaces(races: readonly Race[]): Set<string> {
   return ids;
 }
 
+function collectTeamIdsFromRaces(races: readonly Race[]): Set<string> {
+  const ids = new Set<string>();
+  for (const race of races) {
+    for (const entry of [...(race.grandPrixResult ?? []), ...(race.sprintResult ?? [])]) {
+      ids.add(entry.teamId);
+    }
+  }
+  return ids;
+}
+
 function collectConstructorsFromResults(races: readonly SourceRace[]): SourceConstructor[] {
   const byId = new Map<string, SourceConstructor>();
   for (const race of races) {
@@ -253,30 +267,57 @@ function collectConstructorsFromResults(races: readonly SourceRace[]): SourceCon
 
 function latestTeamByDriver(
   source: SourceData,
-  resolveDriverId: DriverIdResolver,
+  resolveDriverId: SourceIdResolver,
+  resolveTeamId: SourceIdResolver,
 ): Map<string, string> {
   const teamByDriver = new Map<string, string>();
-  const races = [...source.grandPrixResults, ...source.sprintResults].sort(
-    (a, b) => Number(a.round) - Number(b.round),
+
+  for (const standing of source.driverStandings) {
+    const latestConstructor = standing.Constructors.at(-1);
+    if (latestConstructor) {
+      teamByDriver.set(
+        resolveDriverId(standing.Driver.driverId),
+        resolveTeamId(latestConstructor.constructorId),
+      );
+    }
+  }
+
+  const sessions = [
+    ...source.sprintResults.map((race) => ({ race, sessionOrder: 0 })),
+    ...source.grandPrixResults.map((race) => ({ race, sessionOrder: 1 })),
+  ].sort(
+    (a, b) =>
+      Number(a.race.round) - Number(b.race.round) ||
+      a.sessionOrder - b.sessionOrder,
   );
-  for (const race of races) {
+  for (const { race } of sessions) {
     for (const result of [...(race.Results ?? []), ...(race.SprintResults ?? [])]) {
       teamByDriver.set(
         resolveDriverId(result.Driver.driverId),
-        normalizeTeamId(result.Constructor.constructorId),
+        resolveTeamId(result.Constructor.constructorId),
       );
     }
   }
   return teamByDriver;
 }
 
-function buildTeams(source: SourceData, existing: ExistingData): Team[] {
+function buildTeams(
+  source: SourceData,
+  existing: ExistingData,
+  requiredTeamIds: ReadonlySet<string>,
+  resolveTeamId: SourceIdResolver,
+): Team[] {
   const existingById = new Map(existing.teams.map((team) => [team.id, team]));
-  const constructors = [...source.constructors, ...collectConstructorsFromResults(source.grandPrixResults), ...collectConstructorsFromResults(source.sprintResults)];
+  const constructors = [
+    ...source.constructors,
+    ...source.driverStandings.flatMap((standing) => standing.Constructors),
+    ...collectConstructorsFromResults(source.grandPrixResults),
+    ...collectConstructorsFromResults(source.sprintResults),
+  ];
   const byId = new Map<string, Team>();
 
   for (const constructor of constructors) {
-    const id = normalizeTeamId(constructor.constructorId);
+    const id = resolveTeamId(constructor.constructorId);
     const previous = existingById.get(id);
     byId.set(id, {
       id,
@@ -287,8 +328,11 @@ function buildTeams(source: SourceData, existing: ExistingData): Team[] {
     });
   }
 
-  for (const team of existing.teams) {
-    if (!byId.has(team.id)) byId.set(team.id, team);
+  for (const id of requiredTeamIds) {
+    if (byId.has(id)) continue;
+    const previous = existingById.get(id);
+    if (!previous) throw new Error(`Missing constructor details for ${id}`);
+    byId.set(id, previous);
   }
 
   return [...byId.values()].sort((a, b) => a.id.localeCompare(b.id));
@@ -298,26 +342,36 @@ function buildDrivers(
   source: SourceData,
   existing: ExistingData,
   racedDriverIds: ReadonlySet<string>,
-  resolveDriverId: DriverIdResolver,
+  resolveDriverId: SourceIdResolver,
+  resolveTeamId: SourceIdResolver,
 ): Driver[] {
   const existingById = new Map(existing.drivers.map((driver) => [driver.id, driver]));
-  const activeBySourceId = new Map(
-    existing.activeDrivers.map((driver) => [driver.sourceId, driver]),
-  );
-  const teamByDriver = latestTeamByDriver(source, resolveDriverId);
+  const teamByDriver = latestTeamByDriver(source, resolveDriverId, resolveTeamId);
   const sourceDriverById = new Map<string, SourceDriver>();
   for (const sourceDriver of [
     ...source.drivers,
+    ...source.driverStandings.map((standing) => standing.Driver),
     ...collectDriversFromResults(source.grandPrixResults),
     ...collectDriversFromResults(source.sprintResults),
   ]) {
-    sourceDriverById.set(resolveDriverId(sourceDriver.driverId), sourceDriver);
+    const id = resolveDriverId(sourceDriver.driverId);
+    const previous = sourceDriverById.get(id);
+    sourceDriverById.set(id, {
+      ...previous,
+      ...sourceDriver,
+      permanentNumber:
+        sourceDriver.permanentNumber ?? previous?.permanentNumber,
+      code: sourceDriver.code?.trim() || previous?.code,
+      nationality: sourceDriver.nationality ?? previous?.nationality,
+    });
   }
 
-  const requiredDriverIds = new Set(racedDriverIds);
-  for (const activeDriver of existing.activeDrivers) {
-    requiredDriverIds.add(resolveDriverId(activeDriver.sourceId));
-  }
+  const requiredDriverIds = new Set([
+    ...source.driverStandings.map((standing) =>
+      resolveDriverId(standing.Driver.driverId),
+    ),
+    ...racedDriverIds,
+  ]);
 
   const byId = new Map<string, Driver>();
 
@@ -329,7 +383,6 @@ function buildDrivers(
     }
 
     const sourceId = sourceDriver?.driverId ?? previous?.sourceId ?? id;
-    const activeDriver = activeBySourceId.get(sourceId);
     const firstName = sourceDriver?.givenName ?? previous?.firstName ?? id;
     const lastName = sourceDriver?.familyName ?? previous?.lastName ?? id;
     const reliableCode = sourceDriver?.code?.trim();
@@ -346,11 +399,7 @@ function buildDrivers(
       code,
       firstName,
       lastName,
-      teamId:
-        activeDriver?.teamId ??
-        teamByDriver.get(id) ??
-        previous?.teamId ??
-        "unknown",
+      teamId: teamByDriver.get(id) ?? previous?.teamId ?? "unknown",
       country: sourceCountry === "Unknown"
         ? previous?.country ?? "Unknown"
         : sourceCountry,
@@ -365,7 +414,8 @@ function buildRaces(
   existing: ExistingData,
   season: number,
   warnings: string[],
-  resolveDriverId: DriverIdResolver,
+  resolveDriverId: SourceIdResolver,
+  resolveTeamId: SourceIdResolver,
 ): Race[] {
   const previousById = new Map(existing.races.map((race) => [race.id, race]));
   const previousByRound = new Map(
@@ -375,11 +425,13 @@ function buildRaces(
     source.grandPrixResults,
     "Results",
     resolveDriverId,
+    resolveTeamId,
   );
   const sprintByRound = resultMapByRound(
     source.sprintResults,
     "SprintResults",
     resolveDriverId,
+    resolveTeamId,
   );
 
   return source.calendar
@@ -432,20 +484,27 @@ export function transformSourceData(
 
   const warnings: string[] = [];
   const resolveDriverId = createDriverIdResolver(existing.drivers);
-  const teams = buildTeams(source, existing);
-  validateActiveDrivers(existing.activeDrivers, teams, source, existing.drivers);
+  const resolveTeamId = createTeamIdResolver(existing.teams);
   const races = buildRaces(
     source,
     existing,
     season,
     warnings,
     resolveDriverId,
+    resolveTeamId,
+  );
+  const teams = buildTeams(
+    source,
+    existing,
+    collectTeamIdsFromRaces(races),
+    resolveTeamId,
   );
   const drivers = buildDrivers(
     source,
     existing,
     collectDriverIdsFromRaces(races),
     resolveDriverId,
+    resolveTeamId,
   );
 
   const generated = {
@@ -469,41 +528,6 @@ function assertUnique(values: readonly string[] | readonly number[], label: stri
   for (const value of values) {
     if (seen.has(value)) throw new Error(`Duplicate ${label}: ${value}`);
     seen.add(value);
-  }
-}
-
-export function validateActiveDrivers(
-  activeDrivers: readonly ActiveDriver[],
-  teams: readonly Team[],
-  source: SourceData,
-  existingDrivers: readonly Driver[],
-): void {
-  z.array(activeDriverSchema).parse(activeDrivers);
-  assertUnique(activeDrivers.map((driver) => driver.sourceId), "active driver source id");
-
-  const teamIds = new Set(teams.map((team) => team.id));
-  const knownSourceIds = new Set([
-    ...source.drivers.map((driver) => driver.driverId),
-    ...collectDriversFromResults(source.grandPrixResults).map(
-      (driver) => driver.driverId,
-    ),
-    ...collectDriversFromResults(source.sprintResults).map(
-      (driver) => driver.driverId,
-    ),
-    ...existingDrivers.flatMap((driver) =>
-      driver.sourceId ? [driver.sourceId] : [],
-    ),
-  ]);
-
-  for (const activeDriver of activeDrivers) {
-    if (!teamIds.has(activeDriver.teamId)) {
-      throw new Error(
-        `Active driver ${activeDriver.sourceId} references unknown team ${activeDriver.teamId}`,
-      );
-    }
-    if (!knownSourceIds.has(activeDriver.sourceId)) {
-      throw new Error(`Active driver source id is unknown: ${activeDriver.sourceId}`);
-    }
   }
 }
 
@@ -575,6 +599,12 @@ export function validateGeneratedData(data: GeneratedData): void {
   const driverIds = new Set(data.drivers.map((driver) => driver.id));
   const teamIds = new Set(data.teams.map((team) => team.id));
 
+  for (const driver of data.drivers) {
+    if (!teamIds.has(driver.teamId)) {
+      throw new Error(`${driver.id} references unknown team ${driver.teamId}`);
+    }
+  }
+
   for (const race of data.races) {
     if (race.prediction !== null) {
       throw new Error(`${race.id} generated data must have prediction: null`);
@@ -629,12 +659,16 @@ function racesFromResponse(response: JolpicaResponse): SourceRace[] {
 }
 
 async function fetchSourceData(season: number): Promise<SourceData> {
-  const [calendar, drivers, constructors] = await Promise.all([
+  const [calendar, drivers, constructors, standings] = await Promise.all([
     fetchJson(`${DATA_SOURCE_BASE_URL}/${season}.json?limit=100`),
     fetchJson(`${DATA_SOURCE_BASE_URL}/${season}/drivers.json?limit=1000`),
     fetchJson(`${DATA_SOURCE_BASE_URL}/${season}/constructors.json?limit=1000`),
+    fetchJson(`${DATA_SOURCE_BASE_URL}/${season}/driverstandings.json?limit=1000`),
   ]);
   const calendarRaces = racesFromResponse(calendar);
+  const seasonDrivers = drivers.MRData?.DriverTable?.Drivers ?? [];
+  const driverStandings =
+    standings.MRData?.StandingsTable?.StandingsLists?.at(-1)?.DriverStandings ?? [];
 
   const grandPrixResults: JolpicaResponse[] = [];
   const sprintResults: JolpicaResponse[] = [];
@@ -655,8 +689,9 @@ async function fetchSourceData(season: number): Promise<SourceData> {
     calendar: calendarRaces,
     grandPrixResults: grandPrixResults.flatMap(racesFromResponse),
     sprintResults: sprintResults.flatMap(racesFromResponse),
-    drivers: drivers.MRData?.DriverTable?.Drivers ?? [],
+    drivers: seasonDrivers,
     constructors: constructors.MRData?.ConstructorTable?.Constructors ?? [],
+    driverStandings,
   };
 }
 
@@ -666,7 +701,6 @@ async function readJsonFile<T>(fileName: string): Promise<T> {
 
 async function readExistingData(): Promise<ExistingData> {
   return {
-    activeDrivers: await readJsonFile<ActiveDriver[]>("active-drivers.json"),
     drivers: await readJsonFile<Driver[]>("drivers.json"),
     teams: await readJsonFile<Team[]>("teams.json"),
     races: await readJsonFile<Race[]>("races.json"),
