@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useCalculatorStore } from "../store/useCalculatorStore";
 import { encodeScenarioHash } from "../utils/encodeScenario";
@@ -8,7 +8,17 @@ type AppHeaderProps = {
 };
 
 export default function AppHeader({ onReset }: AppHeaderProps) {
-  const [copied, setCopied] = useState(false);
+  const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "failed">("idle");
+  const resetStatusTimerRef = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (resetStatusTimerRef.current !== null) {
+        window.clearTimeout(resetStatusTimerRef.current);
+      }
+    },
+    [],
+  );
 
   const handleShare = async () => {
     const { races } = useCalculatorStore.getState();
@@ -19,14 +29,22 @@ export default function AppHeader({ onReset }: AppHeaderProps) {
     }
 
     const url = window.location.href;
+    let copied: boolean;
     try {
       await navigator.clipboard.writeText(url);
+      copied = true;
     } catch {
-      copyToClipboardFallback(url);
+      copied = copyToClipboardFallback(url);
     }
 
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1500);
+    setShareStatus(copied ? "copied" : "failed");
+    if (resetStatusTimerRef.current !== null) {
+      window.clearTimeout(resetStatusTimerRef.current);
+    }
+    resetStatusTimerRef.current = window.setTimeout(
+      () => setShareStatus("idle"),
+      1500,
+    );
   };
 
   return (
@@ -56,19 +74,36 @@ export default function AppHeader({ onReset }: AppHeaderProps) {
           type="button"
           onClick={handleShare}
           className="inline-flex h-10 items-center gap-1.5 rounded-md bg-red-600 px-3 text-xs font-bold text-white shadow-[0_0_22px_rgba(220,38,38,0.25)] transition hover:bg-red-500 sm:h-8"
-          aria-label={copied ? "Scenario URL copied to clipboard" : "Share scenario URL"}
+          aria-label={
+            shareStatus === "copied"
+              ? "Scenario URL copied to clipboard"
+              : shareStatus === "failed"
+                ? "Could not copy scenario URL"
+                : "Share scenario URL"
+          }
         >
           <span aria-hidden="true" className="text-base leading-none">
             ⤴
           </span>
-          {copied ? "Copied" : "Share"}
+          {shareStatus === "copied"
+            ? "Copied"
+            : shareStatus === "failed"
+              ? "Copy failed"
+              : "Share"}
         </button>
+        <span className="sr-only" role="status" aria-live="polite">
+          {shareStatus === "copied"
+            ? "Scenario URL copied to clipboard."
+            : shareStatus === "failed"
+              ? "Could not copy the scenario URL."
+              : ""}
+        </span>
       </div>
     </header>
   );
 }
 
-function copyToClipboardFallback(text: string): void {
+function copyToClipboardFallback(text: string): boolean {
   const textarea = document.createElement("textarea");
   textarea.value = text;
   textarea.setAttribute("readonly", "");
@@ -76,11 +111,12 @@ function copyToClipboardFallback(text: string): void {
   textarea.style.left = "-9999px";
   document.body.appendChild(textarea);
   textarea.select();
+  let copied: boolean;
   try {
-    document.execCommand("copy");
+    copied = document.execCommand("copy");
   } catch {
-    // Clipboard unavailable; nothing more we can do safely.
+    copied = false;
   }
   document.body.removeChild(textarea);
+  return copied;
 }
-

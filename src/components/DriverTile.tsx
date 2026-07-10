@@ -31,6 +31,7 @@ export default function DriverTile({ driver, team }: DriverTileProps) {
       isDragging={isDragging}
       {...attributes}
       {...listeners}
+      tabIndex={-1}
     />
   );
 }

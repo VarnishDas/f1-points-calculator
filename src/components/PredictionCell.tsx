@@ -11,6 +11,7 @@ import {
 
 type PredictionCellProps = {
   raceId: string;
+  raceName: string;
   session: PredictionSessionType;
   positionIndex: number;
   driver?: Driver;
@@ -20,12 +21,15 @@ type PredictionCellProps = {
 
 export default function PredictionCell({
   raceId,
+  raceName,
   session,
   positionIndex,
   driver,
   team,
   editable,
 }: PredictionCellProps) {
+  const eventName = session === "sprint" ? `${raceName} Sprint` : raceName;
+  const positionName = `position ${positionIndex + 1}`;
   const { setNodeRef, isOver } = useDroppable({
     id: getPredictionDroppableId(raceId, session, positionIndex),
     disabled: !editable,
@@ -50,10 +54,10 @@ export default function PredictionCell({
       }
       aria-label={
         driver
-          ? undefined
+          ? `${driver.firstName} ${driver.lastName}, ${eventName}, ${positionName}`
           : editable
-            ? `Empty position ${positionIndex + 1}`
-            : `Position ${positionIndex + 1} result`
+            ? `Empty ${eventName} ${positionName}`
+            : `${eventName} ${positionName} result`
       }
     >
       {driver ? (
@@ -111,6 +115,7 @@ function DraggableCellDriver({
       aria-label={`Drag ${driver.firstName} ${driver.lastName}`}
       {...attributes}
       {...listeners}
+      tabIndex={-1}
     />
   );
 }

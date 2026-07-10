@@ -16,6 +16,7 @@ function App() {
   const races = useCalculatorStore((s) => s.races);
   const drivers = useCalculatorStore((s) => s.drivers);
   const teams = useCalculatorStore((s) => s.teams);
+  const activeDriverIds = useCalculatorStore((s) => s.activeDriverIds);
   const resetPredictions = useCalculatorStore((s) => s.resetPredictions);
 
   const projected = useMemo(
@@ -47,6 +48,7 @@ function App() {
             races={races}
             drivers={drivers}
             teams={teams}
+            activeDriverIds={activeDriverIds}
           />
         }
       />

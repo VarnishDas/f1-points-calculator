@@ -2,9 +2,12 @@ import { useMemo, useState } from "react";
 import {
   DndContext,
   DragOverlay,
+  PointerSensor,
   type DragEndEvent,
   type DragStartEvent,
-  closestCenter,
+  pointerWithin,
+  useSensor,
+  useSensors,
 } from "@dnd-kit/core";
 
 import type { Driver } from "../types/driver";
@@ -25,18 +28,21 @@ type PredictionWorkspaceProps = {
   races: Race[];
   drivers: Driver[];
   teams: Team[];
+  activeDriverIds: string[];
 };
 
 export default function PredictionWorkspace({
   races,
   drivers,
   teams,
+  activeDriverIds,
 }: PredictionWorkspaceProps) {
   const updatePrediction = useCalculatorStore((state) => state.updatePrediction);
   const clearPredictionPosition = useCalculatorStore(
     (state) => state.clearPredictionPosition,
   );
   const [activeDrag, setActiveDrag] = useState<PredictionDragData | null>(null);
+  const sensors = useSensors(useSensor(PointerSensor));
   const driverById = useMemo(
     () => new Map(drivers.map((driver) => [driver.id, driver])),
     [drivers],
@@ -45,7 +51,6 @@ export default function PredictionWorkspace({
     () => new Map(teams.map((team) => [team.id, team])),
     [teams],
   );
-
   const activeDriver = activeDrag ? driverById.get(activeDrag.driverId) : undefined;
   const activeTeam = activeDriver ? teamById.get(activeDriver.teamId) : undefined;
 
@@ -102,12 +107,17 @@ export default function PredictionWorkspace({
       className="flex min-w-0 flex-col gap-3 lg:min-h-0 lg:overflow-hidden"
     >
       <DndContext
-        collisionDetection={closestCenter}
+        sensors={sensors}
+        collisionDetection={pointerWithin}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onDragCancel={() => setActiveDrag(null)}
       >
-        <DriverPool drivers={drivers} teams={teams} />
+        <DriverPool
+          drivers={drivers}
+          teams={teams}
+          activeDriverIds={activeDriverIds}
+        />
         <PredictionBoard
           races={races}
           drivers={drivers}

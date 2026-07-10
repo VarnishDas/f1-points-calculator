@@ -1,4 +1,5 @@
 import { useDroppable } from "@dnd-kit/core";
+import { useMemo } from "react";
 
 import type { Driver } from "../types/driver";
 import type { Team } from "../types/team";
@@ -7,10 +8,26 @@ import DriverTile from "./DriverTile";
 type DriverPoolProps = {
   drivers: Driver[];
   teams: Team[];
+  activeDriverIds: string[];
 };
 
-export default function DriverPool({ drivers, teams }: DriverPoolProps) {
-  const teamById = new Map(teams.map((team) => [team.id, team]));
+export default function DriverPool({
+  drivers,
+  teams,
+  activeDriverIds,
+}: DriverPoolProps) {
+  const teamById = useMemo(
+    () => new Map(teams.map((team) => [team.id, team])),
+    [teams],
+  );
+  const activeDriverIdSet = useMemo(
+    () => new Set(activeDriverIds),
+    [activeDriverIds],
+  );
+  const activeDrivers = useMemo(
+    () => drivers.filter((driver) => activeDriverIdSet.has(driver.id)),
+    [activeDriverIdSet, drivers],
+  );
   const { setNodeRef, isOver } = useDroppable({
     id: "driver-pool",
     data: {
@@ -32,11 +49,11 @@ export default function DriverPool({ drivers, teams }: DriverPoolProps) {
           Driver Pool
         </h2>
         <p className="text-[11px] text-neutral-500">
-          Drag a driver into any editable race cell
+          Drag a driver to a prediction position
         </p>
       </div>
       <div className="custom-scrollbar grid grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] gap-2 overflow-visible p-2.5 sm:grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] sm:gap-1.5 sm:p-2 lg:max-h-36 lg:overflow-auto xl:max-h-none xl:overflow-visible">
-        {drivers.map((driver) => (
+        {activeDrivers.map((driver) => (
           <DriverTile
             key={driver.id}
             driver={driver}

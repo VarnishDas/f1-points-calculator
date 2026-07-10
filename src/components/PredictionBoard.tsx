@@ -1,27 +1,21 @@
 import { useLayoutEffect, useMemo, useRef } from "react";
 
 import type { Driver } from "../types/driver";
-import type { PredictionSessionType, Race } from "../types/race";
+import type { Race } from "../types/race";
 import type { Team } from "../types/team";
 import { getClassificationSize } from "../utils/classification";
-import { isPredictionSessionEditable } from "../utils/predictionSession";
-import { sortRacesByRound } from "./raceUtils";
 import PredictionCell from "./PredictionCell";
+import {
+  buildBoardColumns,
+  getInitialBoardColumnId,
+  type BoardColumn,
+} from "./predictionBoardColumns";
 
 type PredictionBoardProps = {
   races: Race[];
   drivers: Driver[];
   teams: Team[];
 };
-
-type BoardColumn = {
-  id: string;
-  race: Race;
-  session: PredictionSessionType;
-  isEditable: boolean;
-};
-
-const AUTO_SCROLL_SESSION_ORDER: PredictionSessionType[] = ["sprint", "grandPrix"];
 
 export default function PredictionBoard({
   races,
@@ -32,17 +26,8 @@ export default function PredictionBoard({
   const columnRefs = useRef(new Map<string, HTMLDivElement>());
   const hasAutoScrolledRef = useRef(false);
 
-  const sortedRaces = useMemo(() => sortRacesByRound(races), [races]);
-  const columns = useMemo(
-    () =>
-      sortedRaces.flatMap((race): BoardColumn[] => {
-        const raceColumn = createBoardColumn(race, "grandPrix");
-        if (!race.hasSprint && !race.sprintResult?.length) return [raceColumn];
-        return [raceColumn, createBoardColumn(race, "sprint")];
-      }),
-    [sortedRaces],
-  );
-  const autoScrollColumnId = getAutoScrollColumnId(columns);
+  const columns = useMemo(() => buildBoardColumns(races), [races]);
+  const autoScrollColumnId = getInitialBoardColumnId(columns);
   const driverById = useMemo(
     () => new Map(drivers.map((driver) => [driver.id, driver])),
     [drivers],
@@ -60,21 +45,19 @@ export default function PredictionBoard({
     const target = columnRefs.current.get(autoScrollColumnId);
     if (!container || !target) return;
 
-    container.scrollLeft +=
-      target.getBoundingClientRect().left -
-      container.getBoundingClientRect().left;
+    container.scrollLeft = target.offsetLeft;
     hasAutoScrolledRef.current = true;
   }, [autoScrollColumnId]);
 
   return (
-    <section className="flex min-w-0 flex-col rounded-md border border-white/10 bg-neutral-950/75 shadow-2xl shadow-black/25 lg:min-h-0 lg:flex-1">
+    <section className="isolate flex min-w-0 flex-col overflow-hidden rounded-md border border-white/10 bg-neutral-950/75 shadow-2xl shadow-black/25 lg:min-h-0 lg:flex-1">
       <div className="flex flex-col gap-2 border-b border-white/10 px-3 py-2.5 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-4">
           <h2 className="text-sm font-black uppercase tracking-[0.12em] text-neutral-100">
             Prediction Board
           </h2>
           <p className="text-xs text-neutral-500">
-            Drag and drop drivers to build your season predictions
+            Drag a driver to build predictions
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3 text-xs text-neutral-400">
@@ -85,7 +68,7 @@ export default function PredictionBoard({
       </div>
 
       <div className="custom-scrollbar flex items-start gap-1 overflow-y-auto overflow-x-hidden p-2.5 lg:min-h-0 lg:flex-1">
-        <div className="flex w-8 shrink-0 flex-col gap-1 bg-neutral-950">
+        <div className="relative z-10 flex w-8 shrink-0 flex-col gap-1 bg-neutral-950 shadow-[6px_0_10px_rgba(0,0,0,0.35)]">
           <div className="h-[4.5rem] shrink-0 rounded border border-white/[0.06] bg-neutral-950" />
           {Array.from({ length: classificationSize }, (_, positionIndex) => (
             <div
@@ -99,7 +82,7 @@ export default function PredictionBoard({
 
         <div
           ref={scrollContainerRef}
-          className="custom-scrollbar min-w-0 flex-1 overflow-x-auto"
+          className="custom-scrollbar relative z-0 min-w-0 flex-1 overflow-x-auto"
         >
           <div
             className="grid w-max gap-1"
@@ -130,6 +113,7 @@ export default function PredictionBoard({
                         : "h-[4.5rem] rounded border border-white/10 bg-white/[0.025] px-1 py-1.5 text-center"
                   }
                   title={isSprint ? `${race.name} Sprint` : race.name}
+                  aria-label={`Round ${race.round}, ${race.name}${isSprint ? " Sprint" : ""}`}
                 >
                   <div className="text-xs font-black text-neutral-100">
                     R{race.round}
@@ -202,6 +186,7 @@ function BoardRow({ positionIndex, columns, driverById, teamById }: BoardRowProp
           <PredictionCell
             key={`${id}-${positionIndex}`}
             raceId={race.id}
+            raceName={race.name}
             session={session}
             positionIndex={positionIndex}
             driver={driver}
@@ -231,52 +216,4 @@ function formatRaceLabel(name: string): string {
     .replace(/^Mexico City$/i, "Mexico")
     .replace(/^Saudi Arabian$/i, "Saudi")
     .replace(/^Emilia Romagna$/i, "Imola");
-}
-
-function createBoardColumn(
-  race: Race,
-  session: PredictionSessionType,
-): BoardColumn {
-  return {
-    id: `${race.id}:${session === "grandPrix" ? "gp" : "sprint"}`,
-    race,
-    session,
-    isEditable: isPredictionSessionEditable(race, session),
-  };
-}
-
-function getAutoScrollColumnId(columns: BoardColumn[]): string | undefined {
-  const seenRaceIds = new Set<string>();
-  let firstEditableColumnId: string | undefined;
-
-  for (const column of columns) {
-    if (seenRaceIds.has(column.race.id)) continue;
-    seenRaceIds.add(column.race.id);
-
-    for (const session of AUTO_SCROLL_SESSION_ORDER) {
-      const sessionColumn = columns.find(
-        (candidate) =>
-          candidate.race.id === column.race.id && candidate.session === session,
-      );
-      if (sessionColumn?.isEditable) {
-        firstEditableColumnId = sessionColumn.id;
-        break;
-      }
-    }
-
-    if (firstEditableColumnId) break;
-  }
-
-  if (firstEditableColumnId) {
-    const firstEditableIndex = columns.findIndex(
-      (column) => column.id === firstEditableColumnId,
-    );
-    const previousFinishedColumn = columns
-      .slice(0, firstEditableIndex)
-      .findLast((column) => !column.isEditable);
-
-    return previousFinishedColumn?.id ?? firstEditableColumnId;
-  }
-
-  return columns.at(-1)?.id;
 }
