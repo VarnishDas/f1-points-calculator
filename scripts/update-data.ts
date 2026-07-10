@@ -5,7 +5,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { z } from "zod";
 
 import { APP_SEASON, DATA_SOURCE_BASE_URL } from "../src/config/season.js";
-import type { Driver } from "../src/types/driver.js";
+import type { ActiveDriver, Driver } from "../src/types/driver.js";
 import type { EventResultEntry, Race } from "../src/types/race.js";
 import type { Team } from "../src/types/team.js";
 
@@ -75,6 +75,7 @@ export type GeneratedData = {
 };
 
 export type ExistingData = {
+  activeDrivers: ActiveDriver[];
   drivers: Driver[];
   teams: Team[];
   races: Race[];
@@ -90,31 +91,6 @@ export type SourceData = {
 
 const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DATA_DIR = path.join(ROOT_DIR, "src", "data");
-
-const DRIVER_ID_ALIASES: Record<string, string> = {
-  max_verstappen: "verstappen",
-  oscar_piastri: "piastri",
-  charles_leclerc: "leclerc",
-  lewis_hamilton: "hamilton",
-  george_russell: "russell",
-  kimi_antonelli: "antonelli",
-  andrea_kimi_antonelli: "antonelli",
-  fernando_alonso: "alonso",
-  lance_stroll: "stroll",
-  pierre_gasly: "gasly",
-  jack_doohan: "doohan",
-  carlos_sainz: "sainz",
-  alexander_albon: "albon",
-  alex_albon: "albon",
-  liam_lawson: "lawson",
-  isack_hadjar: "hadjar",
-  esteban_ocon: "ocon",
-  oliver_bearman: "bearman",
-  nico_hulkenberg: "hulkenberg",
-  gabriel_bortoleto: "bortoleto",
-  lando_norris: "norris",
-  yuki_tsunoda: "tsunoda",
-};
 
 const TEAM_ID_ALIASES: Record<string, string> = {
   red_bull: "red-bull",
@@ -143,6 +119,11 @@ const driverSchema = z.object({
   lastName: z.string().min(1),
   teamId: z.string().min(1),
   country: z.string().min(1),
+});
+
+const activeDriverSchema = z.object({
+  sourceId: z.string().min(1),
+  teamId: z.string().min(1),
 });
 
 const teamSchema = z.object({
@@ -176,10 +157,6 @@ export function normalizeSourceId(id: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export function normalizeDriverId(sourceId: string): string {
-  return DRIVER_ID_ALIASES[sourceId] ?? normalizeSourceId(sourceId);
-}
-
 export function normalizeTeamId(sourceId: string): string {
   return TEAM_ID_ALIASES[sourceId] ?? normalizeSourceId(sourceId);
 }
@@ -198,25 +175,48 @@ function raceIdFromName(name: string, season: number): string {
   return `${normalizeSourceId(name.replace(/\bGrand Prix\b/i, "").trim())}-${season}`;
 }
 
-function sourceResultToEntry(result: SourceResult): EventResultEntry {
+type DriverIdResolver = (sourceId: string) => string;
+
+function createDriverIdResolver(existingDrivers: readonly Driver[]): DriverIdResolver {
+  const existingIdBySourceId = new Map(
+    existingDrivers.flatMap((driver) =>
+      driver.sourceId ? [[driver.sourceId, driver.id] as const] : [],
+    ),
+  );
+  return (sourceId) => existingIdBySourceId.get(sourceId) ?? normalizeSourceId(sourceId);
+}
+
+function sourceResultToEntry(
+  result: SourceResult,
+  resolveDriverId: DriverIdResolver,
+): EventResultEntry {
   const position = parseNumber(result.positionOrder) ?? parseNumber(result.position) ?? 0;
   const points = parseNumber(result.points);
   return {
     position,
-    driverId: normalizeDriverId(result.Driver.driverId),
+    driverId: resolveDriverId(result.Driver.driverId),
     teamId: normalizeTeamId(result.Constructor.constructorId),
     status: result.status,
     ...(points === undefined ? {} : { points }),
   };
 }
 
-function resultMapByRound(races: readonly SourceRace[], field: "Results" | "SprintResults") {
+function resultMapByRound(
+  races: readonly SourceRace[],
+  field: "Results" | "SprintResults",
+  resolveDriverId: DriverIdResolver,
+) {
   const map = new Map<number, EventResultEntry[]>();
   for (const race of races) {
     const round = Number(race.round);
     const rawResults = race[field];
     if (!Number.isInteger(round) || !rawResults?.length) continue;
-    map.set(round, rawResults.map(sourceResultToEntry).sort((a, b) => a.position - b.position));
+    map.set(
+      round,
+      rawResults
+        .map((result) => sourceResultToEntry(result, resolveDriverId))
+        .sort((a, b) => a.position - b.position),
+    );
   }
   return map;
 }
@@ -251,7 +251,10 @@ function collectConstructorsFromResults(races: readonly SourceRace[]): SourceCon
   return [...byId.values()];
 }
 
-function latestTeamByDriver(source: SourceData): Map<string, string> {
+function latestTeamByDriver(
+  source: SourceData,
+  resolveDriverId: DriverIdResolver,
+): Map<string, string> {
   const teamByDriver = new Map<string, string>();
   const races = [...source.grandPrixResults, ...source.sprintResults].sort(
     (a, b) => Number(a.round) - Number(b.round),
@@ -259,7 +262,7 @@ function latestTeamByDriver(source: SourceData): Map<string, string> {
   for (const race of races) {
     for (const result of [...(race.Results ?? []), ...(race.SprintResults ?? [])]) {
       teamByDriver.set(
-        normalizeDriverId(result.Driver.driverId),
+        resolveDriverId(result.Driver.driverId),
         normalizeTeamId(result.Constructor.constructorId),
       );
     }
@@ -295,36 +298,63 @@ function buildDrivers(
   source: SourceData,
   existing: ExistingData,
   racedDriverIds: ReadonlySet<string>,
+  resolveDriverId: DriverIdResolver,
 ): Driver[] {
   const existingById = new Map(existing.drivers.map((driver) => [driver.id, driver]));
-  const teamByDriver = latestTeamByDriver(source);
-  const sourceDrivers = [
+  const activeBySourceId = new Map(
+    existing.activeDrivers.map((driver) => [driver.sourceId, driver]),
+  );
+  const teamByDriver = latestTeamByDriver(source, resolveDriverId);
+  const sourceDriverById = new Map<string, SourceDriver>();
+  for (const sourceDriver of [
+    ...source.drivers,
     ...collectDriversFromResults(source.grandPrixResults),
     ...collectDriversFromResults(source.sprintResults),
-  ];
-  const byId = new Map<string, Driver>();
-
-  for (const sourceDriver of sourceDrivers) {
-    const id = normalizeDriverId(sourceDriver.driverId);
-    if (!racedDriverIds.has(id)) continue;
-    const previous = existingById.get(id);
-    const number = parseNumber(sourceDriver.permanentNumber) ?? previous?.number ?? null;
-    byId.set(id, {
-      id,
-      sourceId: sourceDriver.driverId,
-      number,
-      code: previous?.code ?? sourceDriver.code ?? id.slice(0, 3).toUpperCase(),
-      firstName: previous?.firstName ?? sourceDriver.givenName,
-      lastName: previous?.lastName ?? sourceDriver.familyName,
-      teamId: teamByDriver.get(id) ?? previous?.teamId ?? "unknown",
-      country: previous?.country ?? countryCode(sourceDriver.nationality),
-    });
+  ]) {
+    sourceDriverById.set(resolveDriverId(sourceDriver.driverId), sourceDriver);
   }
 
-  for (const driver of existing.drivers) {
-    if (racedDriverIds.has(driver.id) && !byId.has(driver.id)) {
-      byId.set(driver.id, driver);
+  const requiredDriverIds = new Set(racedDriverIds);
+  for (const activeDriver of existing.activeDrivers) {
+    requiredDriverIds.add(resolveDriverId(activeDriver.sourceId));
+  }
+
+  const byId = new Map<string, Driver>();
+
+  for (const id of requiredDriverIds) {
+    const previous = existingById.get(id);
+    const sourceDriver = sourceDriverById.get(id);
+    if (!sourceDriver && !previous) {
+      throw new Error(`Missing driver details for ${id}`);
     }
+
+    const sourceId = sourceDriver?.driverId ?? previous?.sourceId ?? id;
+    const activeDriver = activeBySourceId.get(sourceId);
+    const firstName = sourceDriver?.givenName ?? previous?.firstName ?? id;
+    const lastName = sourceDriver?.familyName ?? previous?.lastName ?? id;
+    const reliableCode = sourceDriver?.code?.trim();
+    const code = reliableCode && /^[A-Za-z]{3}$/.test(reliableCode)
+      ? reliableCode.toUpperCase()
+      : lastName;
+    const sourceCountry = countryCode(sourceDriver?.nationality);
+
+    byId.set(id, {
+      id,
+      sourceId,
+      number:
+        parseNumber(sourceDriver?.permanentNumber) ?? previous?.number ?? null,
+      code,
+      firstName,
+      lastName,
+      teamId:
+        activeDriver?.teamId ??
+        teamByDriver.get(id) ??
+        previous?.teamId ??
+        "unknown",
+      country: sourceCountry === "Unknown"
+        ? previous?.country ?? "Unknown"
+        : sourceCountry,
+    });
   }
 
   return [...byId.values()].sort((a, b) => a.id.localeCompare(b.id));
@@ -335,24 +365,42 @@ function buildRaces(
   existing: ExistingData,
   season: number,
   warnings: string[],
+  resolveDriverId: DriverIdResolver,
 ): Race[] {
   const previousById = new Map(existing.races.map((race) => [race.id, race]));
-  const gpByRound = resultMapByRound(source.grandPrixResults, "Results");
-  const sprintByRound = resultMapByRound(source.sprintResults, "SprintResults");
+  const previousByRound = new Map(
+    existing.races.map((race) => [race.round, race]),
+  );
+  const gpByRound = resultMapByRound(
+    source.grandPrixResults,
+    "Results",
+    resolveDriverId,
+  );
+  const sprintByRound = resultMapByRound(
+    source.sprintResults,
+    "SprintResults",
+    resolveDriverId,
+  );
 
   return source.calendar
     .map((sourceRace) => {
       const round = Number(sourceRace.round);
       const id = raceIdFromName(sourceRace.raceName, season);
-      const previous = previousById.get(id);
+      const previous = previousById.get(id) ?? previousByRound.get(round);
       let grandPrixResult = gpByRound.get(round) ?? null;
-      const sprintResult = sprintByRound.get(round) ?? null;
+      let sprintResult = sprintByRound.get(round) ?? null;
 
       if (!grandPrixResult && previous?.status === "completed" && previous.grandPrixResult) {
         warnings.push(
           `Preserved previous round ${round} GP result because the source omitted it.`,
         );
         grandPrixResult = previous.grandPrixResult;
+      }
+      if (!sprintResult && previous?.sprintResult?.length) {
+        warnings.push(
+          `Preserved previous round ${round} Sprint result because the source omitted it.`,
+        );
+        sprintResult = previous.sprintResult;
       }
 
       return {
@@ -378,10 +426,27 @@ export function transformSourceData(
   season = APP_SEASON,
   generatedAt = new Date().toISOString(),
 ): GeneratedData {
+  if (source.calendar.length === 0) {
+    throw new Error("Calendar check returned no races; generated data was not changed.");
+  }
+
   const warnings: string[] = [];
+  const resolveDriverId = createDriverIdResolver(existing.drivers);
   const teams = buildTeams(source, existing);
-  const races = buildRaces(source, existing, season, warnings);
-  const drivers = buildDrivers(source, existing, collectDriverIdsFromRaces(races));
+  validateActiveDrivers(existing.activeDrivers, teams, source, existing.drivers);
+  const races = buildRaces(
+    source,
+    existing,
+    season,
+    warnings,
+    resolveDriverId,
+  );
+  const drivers = buildDrivers(
+    source,
+    existing,
+    collectDriverIdsFromRaces(races),
+    resolveDriverId,
+  );
 
   const generated = {
     drivers,
@@ -405,6 +470,74 @@ function assertUnique(values: readonly string[] | readonly number[], label: stri
     if (seen.has(value)) throw new Error(`Duplicate ${label}: ${value}`);
     seen.add(value);
   }
+}
+
+export function validateActiveDrivers(
+  activeDrivers: readonly ActiveDriver[],
+  teams: readonly Team[],
+  source: SourceData,
+  existingDrivers: readonly Driver[],
+): void {
+  z.array(activeDriverSchema).parse(activeDrivers);
+  assertUnique(activeDrivers.map((driver) => driver.sourceId), "active driver source id");
+
+  const teamIds = new Set(teams.map((team) => team.id));
+  const knownSourceIds = new Set([
+    ...source.drivers.map((driver) => driver.driverId),
+    ...collectDriversFromResults(source.grandPrixResults).map(
+      (driver) => driver.driverId,
+    ),
+    ...collectDriversFromResults(source.sprintResults).map(
+      (driver) => driver.driverId,
+    ),
+    ...existingDrivers.flatMap((driver) =>
+      driver.sourceId ? [driver.sourceId] : [],
+    ),
+  ]);
+
+  for (const activeDriver of activeDrivers) {
+    if (!teamIds.has(activeDriver.teamId)) {
+      throw new Error(
+        `Active driver ${activeDriver.sourceId} references unknown team ${activeDriver.teamId}`,
+      );
+    }
+    if (!knownSourceIds.has(activeDriver.sourceId)) {
+      throw new Error(`Active driver source id is unknown: ${activeDriver.sourceId}`);
+    }
+  }
+}
+
+export function getCalendarChanges(
+  previousRaces: readonly Race[],
+  nextRaces: readonly Race[],
+): string[] {
+  const previousByRound = new Map(
+    previousRaces.map((race) => [race.round, race]),
+  );
+  const nextByRound = new Map(nextRaces.map((race) => [race.round, race]));
+  const changes: string[] = [];
+
+  for (const race of nextRaces) {
+    const previous = previousByRound.get(race.round);
+    if (!previous) {
+      changes.push(`Added round ${race.round}: ${race.name}`);
+      continue;
+    }
+
+    const changedFields = (["name", "date", "circuit", "hasSprint"] as const)
+      .filter((field) => previous[field] !== race[field]);
+    if (changedFields.length) {
+      changes.push(`Updated round ${race.round}: ${changedFields.join(", ")}`);
+    }
+  }
+
+  for (const race of previousRaces) {
+    if (!nextByRound.has(race.round)) {
+      changes.push(`Removed round ${race.round}: ${race.name}`);
+    }
+  }
+
+  return changes;
 }
 
 function validateResult(
@@ -533,6 +666,7 @@ async function readJsonFile<T>(fileName: string): Promise<T> {
 
 async function readExistingData(): Promise<ExistingData> {
   return {
+    activeDrivers: await readJsonFile<ActiveDriver[]>("active-drivers.json"),
     drivers: await readJsonFile<Driver[]>("drivers.json"),
     teams: await readJsonFile<Team[]>("teams.json"),
     races: await readJsonFile<Race[]>("races.json"),
@@ -556,6 +690,13 @@ async function main(): Promise<void> {
   const existing = await readExistingData();
   const source = await fetchSourceData(APP_SEASON);
   const generated = transformSourceData(source, existing, APP_SEASON);
+  const calendarChanges = getCalendarChanges(existing.races, generated.races);
+
+  console.log(
+    calendarChanges.length
+      ? `Calendar check found ${calendarChanges.length} change(s): ${calendarChanges.join("; ")}`
+      : "Calendar check found no changes.",
+  );
 
   if (dryRun) {
     console.log(

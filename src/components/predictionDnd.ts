@@ -1,4 +1,7 @@
-import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
+import type {
+  DragEndEvent,
+  DragStartEvent,
+} from "@dnd-kit/core";
 
 import type { PredictionSessionType } from "../types/race";
 

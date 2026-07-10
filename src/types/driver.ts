@@ -8,3 +8,8 @@ export interface Driver {
   teamId: string;
   country: string;
 }
+
+export interface ActiveDriver {
+  sourceId: string;
+  teamId: string;
+}

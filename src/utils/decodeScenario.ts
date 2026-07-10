@@ -19,6 +19,7 @@ import {
 export interface DecodeContext {
   races: readonly Race[];
   drivers: readonly Driver[];
+  predictionDriverIds?: readonly string[];
 }
 
 /**
@@ -59,7 +60,9 @@ function buildValidationContext(context: DecodeContext): ValidationContext {
     sprintRaceIds: new Set(
       context.races.filter((race) => race.hasSprint).map((race) => race.id),
     ),
-    driverIds: new Set(context.drivers.map((driver) => driver.id)),
+    driverIds: new Set(
+      context.predictionDriverIds ?? context.drivers.map((driver) => driver.id),
+    ),
     classificationSize: getClassificationSize(context.races),
   };
 }
@@ -79,6 +82,7 @@ function validateSessionPredictions(
     if (!Array.isArray(rawEntries)) continue;
 
     const seenDrivers = new Set<string>();
+    const seenPositions = new Set<number>();
     const entries: ScenarioPredictionEntry[] = [];
 
     for (const rawEntry of rawEntries) {
@@ -86,8 +90,10 @@ function validateSessionPredictions(
       if (rawEntry.p < 1 || rawEntry.p > validation.classificationSize) continue;
       if (!validation.driverIds.has(rawEntry.d)) continue;
       if (seenDrivers.has(rawEntry.d)) continue;
+      if (seenPositions.has(rawEntry.p)) continue;
 
       seenDrivers.add(rawEntry.d);
+      seenPositions.add(rawEntry.p);
       entries.push({ p: rawEntry.p, d: rawEntry.d });
     }
 

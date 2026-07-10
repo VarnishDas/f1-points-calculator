@@ -30,8 +30,13 @@ export function useShareableUrl(): void {
     if (hydratedRef.current) return;
     hydratedRef.current = true;
 
-    const { races, drivers, applyScenario } = useCalculatorStore.getState();
-    const decoded = decodeScenarioFromHash(window.location.hash, { races, drivers });
+    const { races, drivers, activeDriverIds, applyScenario } =
+      useCalculatorStore.getState();
+    const decoded = decodeScenarioFromHash(window.location.hash, {
+      races,
+      drivers,
+      predictionDriverIds: activeDriverIds,
+    });
     if (decoded) {
       applyScenario(decoded);
     }

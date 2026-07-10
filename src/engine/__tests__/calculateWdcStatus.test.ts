@@ -241,5 +241,23 @@ describe("calculateWdcStatus", () => {
       expect(status.chaser).toBe("inContention");
       expect(status.leader).toBe("inContention");
     });
+
+    it("does not treat a completed Sprint as a remaining scoring opportunity", () => {
+      const drivers = makeDrivers(["leader", "chaser"]);
+      const race = sprintRace(
+        "r1",
+        ["chaser", "leader"],
+        null,
+        "upcoming",
+      );
+      race.sprintResult = [
+        { position: 1, driverId: "leader", teamId: "team", points: 8 },
+      ];
+
+      const status = calculateWdcStatus([race], drivers, testTeams);
+
+      expect(status.leader).toBe("champion");
+      expect(status.chaser).toBe("outOfContention");
+    });
   });
 });

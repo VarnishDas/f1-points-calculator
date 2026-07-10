@@ -54,17 +54,12 @@ describe("calculateStandings (real 2026 data)", () => {
     });
   });
 
-  it("records wins from generated official GP and sprint classifications", () => {
+  it("records wins from official Grand Prix classifications only", () => {
     const generatedWins = new Map<string, number>();
     for (const race of races) {
-      const winners = [
-        race.grandPrixResult?.find((entry) => entry.position === 1),
-        race.sprintResult?.find((entry) => entry.position === 1),
-      ];
-      for (const winner of winners) {
-        if (!winner) continue;
-        generatedWins.set(winner.driverId, (generatedWins.get(winner.driverId) ?? 0) + 1);
-      }
+      const winner = race.grandPrixResult?.find((entry) => entry.position === 1);
+      if (!winner) continue;
+      generatedWins.set(winner.driverId, (generatedWins.get(winner.driverId) ?? 0) + 1);
     }
 
     for (const standing of driverStandings) {
@@ -165,6 +160,66 @@ describe("calculateStandings (tie-breaking via countback)", () => {
 });
 
 describe("calculateStandings (classification countback details)", () => {
+  it("does not use Sprint finishing positions for championship countback", () => {
+    const testDrivers: Driver[] = ["b", "a", "c"].map((id, index) => ({
+      id,
+      number: index + 1,
+      code: id.toUpperCase(),
+      firstName: id,
+      lastName: id,
+      teamId: "team",
+      country: "X",
+    }));
+    const testTeams: Team[] = [
+      { id: "team", name: "Team", fullName: "Team", color: "#000000" },
+    ];
+    const testRaces: Race[] = [
+      {
+        ...makeRace({
+          id: "r1",
+          round: 1,
+          name: "R1",
+          circuit: "Test",
+          date: "2026-01-01",
+          status: "completed",
+          result: ["a", "b", "c"],
+          fallbackTeamId: "team",
+        }),
+        hasSprint: true,
+        sprintResult: gpResult(["a", "b", "c"], {}, "team").map(
+          (entry) => ({ ...entry, points: entry.position === 1 ? 8 : entry.position === 2 ? 7 : 6 }),
+        ),
+      },
+      {
+        ...makeRace({
+          id: "r2",
+          round: 2,
+          name: "R2",
+          circuit: "Test",
+          date: "2026-01-08",
+          status: "completed",
+          result: ["b", "a", "c"],
+          fallbackTeamId: "team",
+        }),
+        hasSprint: true,
+        sprintResult: [
+          { position: 1, driverId: "c", teamId: "team", points: 8 },
+          { position: 8, driverId: "b", teamId: "team", points: 1 },
+          { position: 9, driverId: "a", teamId: "team", points: 0 },
+        ],
+      },
+    ];
+
+    const standings = calculateStandings(testRaces, testDrivers, testTeams).drivers;
+
+    expect(standings.find((entry) => entry.driverId === "a")?.points).toBe(51);
+    expect(standings.find((entry) => entry.driverId === "b")?.points).toBe(51);
+    expect(standings.find((entry) => entry.driverId === "b")!.position).toBeLessThan(
+      standings.find((entry) => entry.driverId === "a")!.position,
+    );
+    expect(standings.find((entry) => entry.driverId === "a")?.wins).toBe(1);
+  });
+
   it("uses P11 and lower for countback without awarding points", () => {
     const driverIds = [
       "p1",

@@ -6,6 +6,7 @@ import type { DriverChampionshipEntry } from "./standingsAggregation";
 
 import { getPointsForSessionPosition } from "./calculateRacePoints";
 import { getClassificationSize } from "../utils/classification";
+import { isPredictionSessionEditable } from "../utils/predictionSession";
 import {
   compareChampionshipPerformance,
   resolveChampionshipOrder,
@@ -57,20 +58,22 @@ function applyBestCaseRace(
 
   let nextCase = bestCase;
 
-  const gpPosition = bestAvailableSessionPosition(
-    race.prediction,
-    driverId,
-    classificationSize,
-  );
-  if (gpPosition !== null) {
-    nextCase = {
-      ...nextCase,
-      points: nextCase.points + getPointsForSessionPosition(gpPosition, "grandPrix"),
-      positionCounts: addPositionCount(nextCase.positionCounts, gpPosition),
-    };
+  if (isPredictionSessionEditable(race, "grandPrix")) {
+    const gpPosition = bestAvailableSessionPosition(
+      race.prediction,
+      driverId,
+      classificationSize,
+    );
+    if (gpPosition !== null) {
+      nextCase = {
+        ...nextCase,
+        points: nextCase.points + getPointsForSessionPosition(gpPosition, "grandPrix"),
+        positionCounts: addPositionCount(nextCase.positionCounts, gpPosition),
+      };
+    }
   }
 
-  if (race.hasSprint) {
+  if (isPredictionSessionEditable(race, "sprint")) {
     const sprintPosition = bestAvailableSessionPosition(
       race.sprintPrediction,
       driverId,
@@ -80,7 +83,6 @@ function applyBestCaseRace(
       nextCase = {
         ...nextCase,
         points: nextCase.points + getPointsForSessionPosition(sprintPosition, "sprint"),
-        positionCounts: addPositionCount(nextCase.positionCounts, sprintPosition),
       };
     }
   }
@@ -115,9 +117,14 @@ function raceHasUnresolvedSlots(
 ): boolean {
   if (race.status !== "upcoming") return false;
 
-  if (sessionHasEmptySlot(race.prediction, classificationSize)) return true;
+  if (
+    isPredictionSessionEditable(race, "grandPrix") &&
+    sessionHasEmptySlot(race.prediction, classificationSize)
+  ) {
+    return true;
+  }
 
-  if (race.hasSprint) {
+  if (isPredictionSessionEditable(race, "sprint")) {
     return sessionHasEmptySlot(race.sprintPrediction, classificationSize);
   }
 
@@ -156,7 +163,7 @@ export function calculateWdcStatus(
     races,
     drivers,
     teams,
-    "completedAndPredicted",
+    "officialAndPredicted",
   ).drivers;
   const classificationSize = getClassificationSize(races);
   const statuses: WdcStatusByDriverId = Object.fromEntries(

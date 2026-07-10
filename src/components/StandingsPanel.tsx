@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import type { Driver } from "../types/driver";
 import type { Team } from "../types/team";
@@ -22,8 +22,14 @@ export default function StandingsPanel({
   wdcStatusByDriverId,
 }: StandingsPanelProps) {
   const [mode, setMode] = useState<StandingsMode>("drivers");
-  const driverById = new Map(drivers.map((driver) => [driver.id, driver]));
-  const teamById = new Map(teams.map((team) => [team.id, team]));
+  const driverById = useMemo(
+    () => new Map(drivers.map((driver) => [driver.id, driver])),
+    [drivers],
+  );
+  const teamById = useMemo(
+    () => new Map(teams.map((team) => [team.id, team])),
+    [teams],
+  );
 
   return (
     <aside className="flex w-full flex-col rounded-md border border-white/10 bg-neutral-950/75 shadow-2xl shadow-black/30 lg:h-full lg:max-h-full lg:min-h-0">
@@ -68,12 +74,13 @@ export default function StandingsPanel({
       <div className="custom-scrollbar max-h-[22rem] overflow-x-auto overflow-y-auto lg:min-h-0 lg:max-h-none lg:flex-1 lg:stable-scrollbar-gutter">
         {mode === "drivers" ? (
           <table className="w-full border-collapse text-xs">
+            <caption className="sr-only">Projected drivers championship standings</caption>
             <thead className="sticky top-0 z-10 bg-neutral-950">
               <tr className="border-b border-white/10 text-left text-[11px] uppercase tracking-wide text-neutral-500">
-                <th className="sticky left-0 z-20 w-10 bg-neutral-950 px-2 py-2 font-bold sm:px-4">#</th>
-                <th className="px-1 py-2 font-bold">Driver</th>
-                <th className="w-10 px-1 py-2 text-right font-bold">W</th>
-                <th className="w-16 px-2 py-2 text-right font-bold sm:px-4">Pts</th>
+                <th scope="col" className="sticky left-0 z-20 w-10 bg-neutral-950 px-2 py-2 font-bold sm:px-4">#</th>
+                <th scope="col" className="px-1 py-2 font-bold">Driver</th>
+                <th scope="col" className="w-10 px-1 py-2 text-right font-bold">W</th>
+                <th scope="col" className="w-16 px-2 py-2 text-right font-bold sm:px-4">Pts</th>
               </tr>
             </thead>
             <tbody>
@@ -127,11 +134,12 @@ export default function StandingsPanel({
           </table>
         ) : (
           <table className="w-full border-collapse text-xs">
+            <caption className="sr-only">Projected constructors championship standings</caption>
             <thead className="sticky top-0 z-10 bg-neutral-950">
               <tr className="border-b border-white/10 text-left text-[11px] uppercase tracking-wide text-neutral-500">
-                <th className="sticky left-0 z-20 w-10 bg-neutral-950 px-2 py-2 font-bold sm:px-4">#</th>
-                <th className="px-1 py-2 font-bold">Constructor</th>
-                <th className="w-16 px-2 py-2 text-right font-bold sm:px-4">Pts</th>
+                <th scope="col" className="sticky left-0 z-20 w-10 bg-neutral-950 px-2 py-2 font-bold sm:px-4">#</th>
+                <th scope="col" className="px-1 py-2 font-bold">Constructor</th>
+                <th scope="col" className="w-16 px-2 py-2 text-right font-bold sm:px-4">Pts</th>
               </tr>
             </thead>
             <tbody>
