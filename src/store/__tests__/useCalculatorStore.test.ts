@@ -27,11 +27,11 @@ describe("useCalculatorStore", () => {
     });
   });
 
-  it("exposes a validated active driver subset for prediction", () => {
+  it("exposes every API-derived season driver for prediction", () => {
     const { activeDriverIds, drivers } = useCalculatorStore.getState();
     const driverIds = new Set(drivers.map((driver) => driver.id));
 
-    expect(activeDriverIds).toHaveLength(22);
+    expect(activeDriverIds).toHaveLength(drivers.length);
     expect(activeDriverIds.every((driverId) => driverIds.has(driverId))).toBe(true);
   });
 

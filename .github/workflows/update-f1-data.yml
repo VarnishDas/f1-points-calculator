@@ -32,7 +32,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check calendar and update generated data
+      - name: Fetch data and compare the race calendar
         run: pnpm data:update
 
       - name: Lint
@@ -47,9 +47,9 @@ jobs:
       - name: Create pull request
         uses: peter-evans/create-pull-request@v8
         with:
-          commit-message: "chore: update F1 data"
-          title: "chore: update F1 data"
-          body: "Automated 2026 F1 data update."
+          commit-message: "chore: update F1 data and calendar"
+          title: "chore: update F1 data and calendar"
+          body: "Automated 2026 driver, constructor, result, and race calendar update from Jolpica."
           branch: data/update-f1-data
           delete-branch: true
           add-paths: |
