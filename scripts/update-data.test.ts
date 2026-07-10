@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  normalizeDriverId,
+  getCalendarChanges,
+  normalizeSourceId,
   normalizeTeamId,
   transformSourceData,
   validateGeneratedData,
@@ -11,6 +12,11 @@ import {
 } from "./update-data.js";
 
 const existing: ExistingData = {
+  activeDrivers: [
+    { sourceId: "max_verstappen", teamId: "red-bull" },
+    { sourceId: "fp_only_driver", teamId: "red-bull" },
+    { sourceId: "unraced_existing", teamId: "red-bull" },
+  ],
   drivers: [
     {
       id: "unraced-existing",
@@ -167,9 +173,9 @@ const source: SourceData = {
   ],
 };
 
-describe("update-data aliases", () => {
-  it("normalizes known driver and constructor aliases", () => {
-    expect(normalizeDriverId("max_verstappen")).toBe("verstappen");
+describe("update-data identifiers", () => {
+  it("normalizes unknown source ids without driver-name aliases", () => {
+    expect(normalizeSourceId("new_reserve_driver")).toBe("new-reserve-driver");
     expect(normalizeTeamId("red_bull")).toBe("red-bull");
     expect(normalizeTeamId("rb")).toBe("racing-bulls");
     expect(normalizeTeamId("sauber")).toBe("audi");
@@ -177,7 +183,7 @@ describe("update-data aliases", () => {
 });
 
 describe("transformSourceData", () => {
-  it("transforms calendar, GP results, sprint results, aliases, and overrides", () => {
+  it("transforms results, resolves existing source ids, and admits new drivers", () => {
     const generated = transformSourceData(source, existing, 2026, "2026-07-05T00:00:00.000Z");
 
     expect(generated.races).toHaveLength(2);
@@ -223,10 +229,14 @@ describe("transformSourceData", () => {
     });
     expect(generated.drivers.find((driver) => driver.id === "reserve-driver")).toMatchObject({
       number: null,
+      code: "RES",
       teamId: "racing-bulls",
     });
-    expect(generated.drivers.map((driver) => driver.id)).not.toContain("fp-only-driver");
-    expect(generated.drivers.map((driver) => driver.id)).not.toContain("unraced-existing");
+    expect(generated.drivers.find((driver) => driver.id === "fp-only-driver")).toMatchObject({
+      code: "Only",
+      teamId: "red-bull",
+    });
+    expect(generated.drivers.map((driver) => driver.id)).toContain("unraced-existing");
     expect(generated.teams.find((team) => team.id === "red-bull")?.color).toBe("#3671C6");
     expect(generated.teams.find((team) => team.id === "audi")?.name).toBe("Audi");
   });
@@ -300,6 +310,89 @@ describe("transformSourceData", () => {
       { position: 1, driverId: "verstappen", teamId: "red-bull" },
     ]);
     expect(generated.metadata.warnings[0]).toContain("Preserved previous round 1");
+  });
+
+  it("preserves previous Sprint results when the source omits them", () => {
+    const previousSprint = [
+      { position: 1, driverId: "verstappen", teamId: "red-bull", points: 8 },
+    ];
+    const generated = transformSourceData(
+      { ...source, sprintResults: [] },
+      {
+        ...existing,
+        races: [
+          {
+            id: "bahrain-2026",
+            round: 1,
+            name: "Bahrain Grand Prix",
+            circuit: "Bahrain International Circuit",
+            date: "2026-03-08",
+            status: "completed",
+            hasSprint: true,
+            grandPrixResult: [
+              { position: 1, driverId: "verstappen", teamId: "red-bull" },
+            ],
+            sprintResult: previousSprint,
+            prediction: null,
+            sprintPrediction: null,
+          },
+        ],
+      },
+      2026,
+      "2026-07-05T00:00:00.000Z",
+    );
+
+    expect(generated.races[0].sprintResult).toEqual(previousSprint);
+    expect(generated.metadata.warnings).toContainEqual(
+      expect.stringContaining("Preserved previous round 1 Sprint result"),
+    );
+  });
+
+  it("rejects an empty calendar response instead of deleting the calendar", () => {
+    expect(() =>
+      transformSourceData(
+        { ...source, calendar: [] },
+        existing,
+        2026,
+        "2026-07-05T00:00:00.000Z",
+      ),
+    ).toThrow(/Calendar check returned no races/);
+  });
+});
+
+describe("getCalendarChanges", () => {
+  it("reports additions, removals, and schedule-field changes", () => {
+    const previous = transformSourceData(
+      source,
+      existing,
+      2026,
+      "2026-07-05T00:00:00.000Z",
+    ).races;
+    const next = previous
+      .filter((race) => race.round !== 2)
+      .map((race) =>
+        race.round === 1
+          ? { ...race, date: "2026-03-09", hasSprint: false }
+          : race,
+      );
+    next.push({
+      id: "australian-2026",
+      round: 3,
+      name: "Australian Grand Prix",
+      circuit: "Albert Park Circuit",
+      date: "2026-03-22",
+      status: "upcoming",
+      grandPrixResult: null,
+      sprintResult: null,
+      prediction: null,
+      sprintPrediction: null,
+    });
+
+    expect(getCalendarChanges(previous, next)).toEqual([
+      "Updated round 1: date, hasSprint",
+      "Added round 3: Australian Grand Prix",
+      "Removed round 2: Saudi Arabian Grand Prix",
+    ]);
   });
 });
 
