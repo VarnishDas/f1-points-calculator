@@ -2,12 +2,16 @@ import { create } from "zustand";
 
 import type { Driver } from "../types/driver";
 import type { PredictionSessionType, Race } from "../types/race";
-import type { DriverStanding, TeamStanding } from "../types/standings";
 import type { Team } from "../types/team";
 import type { ScenarioPredictionsBySession } from "../utils/encodeScenario";
 
-import { drivers as initialDrivers, races as initialRaces, teams as initialTeams } from "../data";
-import { calculateStandings } from "../engine/calculateStandings";
+import {
+  activeDriverIds as initialActiveDriverIds,
+  drivers as initialDrivers,
+  races as initialRaces,
+  teams as initialTeams,
+} from "../data";
+import { getClassificationSize } from "../utils/classification";
 import { isPredictionSessionEditable } from "../utils/predictionSession";
 
 const PREDICTION_FIELD: Record<PredictionSessionType, keyof Pick<Race, "prediction" | "sprintPrediction">> = {
@@ -19,6 +23,7 @@ export interface CalculatorState {
   races: Race[];
   drivers: Driver[];
   teams: Team[];
+  activeDriverIds: string[];
   updatePrediction: (
     raceId: string,
     session: PredictionSessionType,
@@ -52,39 +57,81 @@ function cloneRaces(races: Race[]): Race[] {
 }
 
 function applyEntriesToPrediction(
-  race: Race,
-  session: PredictionSessionType,
   entries: { p: number; d: string }[] | undefined,
-): Race {
-  const field = PREDICTION_FIELD[session];
-  if (!entries || entries.length === 0) {
-    return { ...race, [field]: null } as Race;
-  }
+  allowedDriverIds: ReadonlySet<string>,
+  classificationSize: number,
+): string[] | null {
+  if (!entries?.length) return null;
 
   const nextResult: string[] = [];
+  const usedPositions = new Set<number>();
   for (const entry of entries) {
-    nextResult[entry.p - 1] = entry.d;
-  }
-  while (nextResult.length > 0 && nextResult[nextResult.length - 1] === undefined) {
-    nextResult.length -= 1;
+    const positionIndex = entry.p - 1;
+    if (
+      !Number.isInteger(entry.p) ||
+      positionIndex < 0 ||
+      positionIndex >= classificationSize ||
+      usedPositions.has(positionIndex)
+    ) {
+      continue;
+    }
+    usedPositions.add(positionIndex);
+    nextResult[positionIndex] = entry.d;
   }
 
-  return { ...race, [field]: nextResult.length ? nextResult : null } as Race;
+  return normalizePrediction(nextResult, allowedDriverIds, classificationSize);
+}
+
+function normalizePrediction(
+  prediction: readonly string[],
+  allowedDriverIds: ReadonlySet<string>,
+  classificationSize: number,
+): string[] | null {
+  const normalized: string[] = [];
+  const usedDrivers = new Set<string>();
+
+  for (let index = 0; index < Math.min(prediction.length, classificationSize); index++) {
+    const driverId = prediction[index];
+    if (
+      !driverId ||
+      !allowedDriverIds.has(driverId) ||
+      usedDrivers.has(driverId)
+    ) {
+      continue;
+    }
+    usedDrivers.add(driverId);
+    normalized[index] = driverId;
+  }
+
+  trimEmptyTrailingPositions(normalized);
+  return normalized.length ? normalized : null;
+}
+
+function trimEmptyTrailingPositions(prediction: string[]): void {
+  while (prediction.length > 0 && prediction[prediction.length - 1] === undefined) {
+    prediction.length -= 1;
+  }
 }
 
 export const useCalculatorStore = create<CalculatorState>()((set) => ({
   races: cloneRaces(initialRaces),
   drivers: initialDrivers,
   teams: initialTeams,
+  activeDriverIds: initialActiveDriverIds,
 
   updatePrediction: (raceId, session, orderedDriverIds) =>
     set((state) => {
       const race = state.races.find((r) => r.id === raceId);
       if (!race || !isPredictionSessionEditable(race, session)) return state;
       const field = PREDICTION_FIELD[session];
+      const normalized = normalizePrediction(
+        orderedDriverIds,
+        new Set(state.activeDriverIds),
+        getClassificationSize(state.races),
+      );
       return {
         races: state.races.map((r) =>
-          r.id === raceId ? { ...r, [field]: orderedDriverIds.slice() } : r,
+          r.id === raceId ? { ...r, [field]: normalized } : r,
         ),
       } as { races: Race[] };
     }),
@@ -95,13 +142,13 @@ export const useCalculatorStore = create<CalculatorState>()((set) => ({
       if (!race || !isPredictionSessionEditable(race, session)) return state;
       const field = PREDICTION_FIELD[session];
       const current = race[field] as string[] | null;
-      if (!current) return state;
+      if (!current || positionIndex < 0 || positionIndex >= getClassificationSize(state.races)) {
+        return state;
+      }
 
       const nextResult = current.slice();
       delete nextResult[positionIndex];
-      while (nextResult.length > 0 && nextResult[nextResult.length - 1] === undefined) {
-        nextResult.length -= 1;
-      }
+      trimEmptyTrailingPositions(nextResult);
 
       return {
         races: state.races.map((r) =>
@@ -113,17 +160,33 @@ export const useCalculatorStore = create<CalculatorState>()((set) => ({
     }),
 
   applyScenario: ({ predictions, sprintPredictions }) =>
-    set((state) => ({
-      races: state.races.map((race) => {
-        if (race.status !== "upcoming") return race;
+    set((state) => {
+      const allowedDriverIds = new Set(state.activeDriverIds);
+      const classificationSize = getClassificationSize(state.races);
+      return {
+        races: state.races.map((race) => {
+          if (race.status !== "upcoming") return race;
 
-        let nextRace = applyEntriesToPrediction(race, "grandPrix", predictions[race.id]);
-        if (race.hasSprint) {
-          nextRace = applyEntriesToPrediction(nextRace, "sprint", sprintPredictions[race.id]);
-        }
-        return nextRace;
-      }),
-    })),
+          return {
+            ...race,
+            prediction: isPredictionSessionEditable(race, "grandPrix")
+              ? applyEntriesToPrediction(
+                  predictions[race.id],
+                  allowedDriverIds,
+                  classificationSize,
+                )
+              : null,
+            sprintPrediction: isPredictionSessionEditable(race, "sprint")
+              ? applyEntriesToPrediction(
+                  sprintPredictions[race.id],
+                  allowedDriverIds,
+                  classificationSize,
+                )
+              : null,
+          };
+        }),
+      };
+    }),
 
   resetPredictions: () =>
     set((state) => ({
@@ -134,15 +197,3 @@ export const useCalculatorStore = create<CalculatorState>()((set) => ({
       ),
     })),
 }));
-
-/**
- * Selectors keep the store as the single source of truth for computed
- * standings. They derive driver/constructor standings from current state.
- */
-export function selectDriverStandings(state: CalculatorState): DriverStanding[] {
-  return calculateStandings(state.races, state.drivers, state.teams).drivers;
-}
-
-export function selectTeamStandings(state: CalculatorState): TeamStanding[] {
-  return calculateStandings(state.races, state.drivers, state.teams).teams;
-}

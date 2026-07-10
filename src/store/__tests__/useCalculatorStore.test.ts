@@ -1,10 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import {
-  selectDriverStandings,
-  selectTeamStandings,
-  useCalculatorStore,
-} from "../useCalculatorStore";
-import { calculateStandings } from "../../engine/calculateStandings";
+import { useCalculatorStore } from "../useCalculatorStore";
 import { drivers as staticDrivers, races as staticRaces, teams as staticTeams } from "../../data";
 import { RACE_CLASSIFICATION_SIZE } from "../../constants/race";
 import type { ScenarioPredictionsBySession } from "../../utils/encodeScenario";
@@ -30,6 +25,14 @@ describe("useCalculatorStore", () => {
       if (race.prediction) expect(storeRace?.prediction).not.toBe(race.prediction);
       if (race.sprintPrediction) expect(storeRace?.sprintPrediction).not.toBe(race.sprintPrediction);
     });
+  });
+
+  it("exposes a validated active driver subset for prediction", () => {
+    const { activeDriverIds, drivers } = useCalculatorStore.getState();
+    const driverIds = new Set(drivers.map((driver) => driver.id));
+
+    expect(activeDriverIds).toHaveLength(22);
+    expect(activeDriverIds.every((driverId) => driverIds.has(driverId))).toBe(true);
   });
 
   it("updatePrediction replaces the prediction of an upcoming race", () => {
@@ -81,6 +84,30 @@ describe("useCalculatorStore", () => {
       .races.find((r) => r.id === upcoming.id);
     expect(updated?.prediction).toHaveLength(RACE_CLASSIFICATION_SIZE);
     expect(updated?.prediction?.[RACE_CLASSIFICATION_SIZE - 1]).toBe("norris");
+  });
+
+  it("updatePrediction removes duplicate and ineligible driver ids", () => {
+    const upcoming = useCalculatorStore
+      .getState()
+      .races.find((r) => r.status === "upcoming");
+    if (!upcoming) throw new Error("expected at least one upcoming race");
+
+    useCalculatorStore
+      .getState()
+      .updatePrediction(upcoming.id, "grandPrix", [
+        "norris",
+        "norris",
+        "not-an-active-driver",
+        "piastri",
+      ]);
+
+    const prediction = useCalculatorStore
+      .getState()
+      .races.find((race) => race.id === upcoming.id)?.prediction;
+    expect(prediction?.[0]).toBe("norris");
+    expect(prediction?.[1]).toBeUndefined();
+    expect(prediction?.[2]).toBeUndefined();
+    expect(prediction?.[3]).toBe("piastri");
   });
 
   it("updatePrediction does not modify completed races", () => {
@@ -183,11 +210,6 @@ describe("useCalculatorStore", () => {
     expect(completedWithResults.length).toBeGreaterThan(0);
   });
 
-  it("selectDriverStandings matches calculateStandings on the store's races", () => {
-    const state = useCalculatorStore.getState();
-    const expected = calculateStandings(state.races, state.drivers, state.teams).drivers;
-    expect(selectDriverStandings(state)).toEqual(expected);
-  });
 });
 
 describe("sprint weekend predictions", () => {
@@ -318,31 +340,6 @@ describe("sprint weekend predictions", () => {
       .races.find((r) => r.id === completedSprint.id);
     expect(after?.sprintResult).toEqual(originalSprintResult);
     expect(after?.sprintPrediction).toBeNull();
-  });
-});
-
-describe("selectTeamStandings", () => {
-  it("returns a sorted TeamStanding[] for all generated teams", () => {
-    const state = useCalculatorStore.getState();
-    const teamStandings = selectTeamStandings(state);
-    const points = teamStandings.map((t) => t.points);
-    expect(teamStandings).toHaveLength(state.teams.length);
-    expect(points).toEqual([...points].sort((a, b) => b - a));
-    teamStandings.forEach((row, index) => {
-      expect(row.position).toBe(index + 1);
-    });
-  });
-
-  it("produces non-negative constructor points", () => {
-    const state = useCalculatorStore.getState();
-    const teamStandings = selectTeamStandings(state);
-    expect(teamStandings.every((standing) => standing.points >= 0)).toBe(true);
-  });
-
-  it("matches the team standings produced by calculateStandings", () => {
-    const state = useCalculatorStore.getState();
-    const expected = calculateStandings(state.races, state.drivers, state.teams).teams;
-    expect(selectTeamStandings(state)).toEqual(expected);
   });
 });
 
@@ -533,5 +530,31 @@ describe("applyScenario", () => {
       .races.find((r) => r.id === upcomingNonSprint.id);
     expect(updated?.sprintPrediction).toBeNull();
     expect(updated?.prediction).toBeNull();
+  });
+
+  it("discards a shared Sprint prediction when that Sprint already has an official result", () => {
+    const originalRaces = useCalculatorStore.getState().races;
+    const midWeekendRace = {
+      ...originalRaces.find((race) => race.status === "upcoming" && race.hasSprint)!,
+      sprintResult: [
+        { position: 1, driverId: "norris", teamId: "mclaren", points: 8 },
+      ],
+    };
+
+    try {
+      useCalculatorStore.setState({ races: [midWeekendRace] });
+      useCalculatorStore.getState().applyScenario({
+        predictions: {},
+        sprintPredictions: {
+          [midWeekendRace.id]: [{ p: 1, d: "piastri" }],
+        },
+      });
+
+      const updated = useCalculatorStore.getState().races[0];
+      expect(updated.sprintResult).toEqual(midWeekendRace.sprintResult);
+      expect(updated.sprintPrediction).toBeNull();
+    } finally {
+      useCalculatorStore.setState({ races: originalRaces });
+    }
   });
 });

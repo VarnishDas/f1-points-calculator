@@ -6,8 +6,9 @@ import type { ChampionshipCountbackEntry } from "./resolveTies";
 
 import { getPointsForSessionPosition, type PointsSession } from "./calculateRacePoints";
 import { resolveChampionshipOrder } from "./resolveTies";
+import { isPredictionSessionEditable } from "../utils/predictionSession";
 
-export type StandingsRaceMode = "completedOnly" | "completedAndPredicted";
+export type StandingsRaceMode = "officialOnly" | "officialAndPredicted";
 
 export interface DriverChampionshipEntry extends ChampionshipCountbackEntry {
   driverId: string;
@@ -42,6 +43,7 @@ function addClassificationEntry(
   driverPositionCounts: Map<string, number[]>,
   teamTotalPoints: Map<string, number>,
   teamPositionCounts: Map<string, number[]>,
+  countsForChampionshipTiebreak: boolean,
 ): void {
   if (!driverId || !Number.isInteger(position) || position < 1) return;
 
@@ -50,23 +52,27 @@ function addClassificationEntry(
     (driverTotalPoints.get(driverId) ?? 0) + points,
   );
 
-  let driverCounts = driverPositionCounts.get(driverId);
-  if (!driverCounts) {
-    driverCounts = [];
-    driverPositionCounts.set(driverId, driverCounts);
+  if (countsForChampionshipTiebreak) {
+    let driverCounts = driverPositionCounts.get(driverId);
+    if (!driverCounts) {
+      driverCounts = [];
+      driverPositionCounts.set(driverId, driverCounts);
+    }
+    incrementPositionCount(driverCounts, position);
   }
-  incrementPositionCount(driverCounts, position);
 
   if (!teamId) return;
 
   teamTotalPoints.set(teamId, (teamTotalPoints.get(teamId) ?? 0) + points);
 
-  let teamCounts = teamPositionCounts.get(teamId);
-  if (!teamCounts) {
-    teamCounts = [];
-    teamPositionCounts.set(teamId, teamCounts);
+  if (countsForChampionshipTiebreak) {
+    let teamCounts = teamPositionCounts.get(teamId);
+    if (!teamCounts) {
+      teamCounts = [];
+      teamPositionCounts.set(teamId, teamCounts);
+    }
+    incrementPositionCount(teamCounts, position);
   }
-  incrementPositionCount(teamCounts, position);
 }
 
 function addOfficialResult(
@@ -89,6 +95,7 @@ function addOfficialResult(
       driverPositionCounts,
       teamTotalPoints,
       teamPositionCounts,
+      session === "grandPrix",
     );
   }
 }
@@ -116,6 +123,7 @@ function addPredictionResult(
       driverPositionCounts,
       teamTotalPoints,
       teamPositionCounts,
+      session === "grandPrix",
     );
   });
 }
@@ -152,17 +160,19 @@ export function aggregateChampionshipEntries(
       teamPositionCounts,
     );
 
-    if (mode === "completedAndPredicted" && race.status === "upcoming") {
-      addPredictionResult(
-        race.prediction,
-        "grandPrix",
-        driverToTeam,
-        driverTotalPoints,
-        driverPositionCounts,
-        teamTotalPoints,
-        teamPositionCounts,
-      );
-      if (race.hasSprint) {
+    if (mode === "officialAndPredicted") {
+      if (isPredictionSessionEditable(race, "grandPrix")) {
+        addPredictionResult(
+          race.prediction,
+          "grandPrix",
+          driverToTeam,
+          driverTotalPoints,
+          driverPositionCounts,
+          teamTotalPoints,
+          teamPositionCounts,
+        );
+      }
+      if (isPredictionSessionEditable(race, "sprint")) {
         addPredictionResult(
           race.sprintPrediction,
           "sprint",

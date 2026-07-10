@@ -198,6 +198,34 @@ describe("calculateProjectedStandings", () => {
       expect(standings.drivers.find((entry) => entry.driverId === "c")?.points).toBe(25);
     });
 
+    it("does not add a stale Sprint prediction after the official Sprint result exists", () => {
+      const testRaces: Race[] = [
+        {
+          id: "sprint-race",
+          round: 1,
+          name: "Sprint Race",
+          circuit: "Test",
+          date: "2026-01-01",
+          status: "upcoming",
+          hasSprint: true,
+          grandPrixResult: null,
+          sprintResult: [
+            { position: 1, driverId: "a", teamId: "team-a", points: 8 },
+          ],
+          prediction: null,
+          sprintPrediction: ["a"],
+        },
+      ];
+
+      const standings = calculateProjectedStandings(
+        testRaces,
+        testDrivers,
+        testTeams,
+      );
+
+      expect(standings.drivers.find((entry) => entry.driverId === "a")?.points).toBe(8);
+    });
+
     it("ignores sprint predictions for non-sprint weekends", () => {
       const testRaces: Race[] = [
         {

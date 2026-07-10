@@ -8,9 +8,8 @@ import { calculateStandingsForMode } from "./standingsAggregation";
 /**
  * Projected ("what-if") standings.
  *
- * Includes every race that currently has a result:
- *   - completed races (official results)
- *   - upcoming races where the user has made a prediction (non-null prediction)
+ * Includes every official result currently available plus predictions for
+ * sessions that have not taken place yet.
  *
  * Upcoming races with no prediction (`prediction === null`) are ignored, so
  * before any predictions are made this is equivalent to `calculateStandings`.
@@ -21,5 +20,5 @@ export function calculateProjectedStandings(
   drivers: Driver[],
   teams: Team[],
 ): StandingsResult {
-  return calculateStandingsForMode(races, drivers, teams, "completedAndPredicted");
+  return calculateStandingsForMode(races, drivers, teams, "officialAndPredicted");
 }

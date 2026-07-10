@@ -233,6 +233,50 @@ describe("decodeScenario data filtering", () => {
     ]);
   });
 
+  it("avoids duplicate positions within the same race, keeping the first valid entry", () => {
+    const payload = {
+      v: 1,
+      predictions: {
+        "china-2026": [
+          { p: 1, d: "norris" },
+          { p: 1, d: "piastri" },
+          { p: 2, d: "verstappen" },
+        ],
+      },
+    };
+
+    const decoded = decodeScenarioFromString(
+      encodePayload(payload),
+      contextFor(UPCOMING_RACES),
+    );
+
+    expect(decoded?.predictions["china-2026"]).toEqual([
+      { p: 1, d: "norris" },
+      { p: 2, d: "verstappen" },
+    ]);
+  });
+
+  it("filters otherwise-known drivers that are not prediction eligible", () => {
+    const payload = {
+      v: 1,
+      predictions: {
+        "china-2026": [
+          { p: 1, d: "leclerc" },
+          { p: 2, d: "norris" },
+        ],
+      },
+    };
+
+    const decoded = decodeScenarioFromString(encodePayload(payload), {
+      ...contextFor(UPCOMING_RACES),
+      predictionDriverIds: ["norris"],
+    });
+
+    expect(decoded?.predictions["china-2026"]).toEqual([
+      { p: 2, d: "norris" },
+    ]);
+  });
+
   it("drops a race entirely when none of its entries are valid", () => {
     const payload = {
       v: 1,
