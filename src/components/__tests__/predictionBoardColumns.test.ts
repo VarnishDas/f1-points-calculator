@@ -32,7 +32,7 @@ describe("buildBoardColumns", () => {
     expect(races.map((race) => race.round)).toEqual([3, 1, 2]);
   });
 
-  it("keeps only the latest completed session before upcoming sessions", () => {
+  it("keeps completed sessions available before upcoming sessions", () => {
     const columns = buildBoardColumns([
       makeRace(1, { status: "completed" }),
       makeRace(2, {
@@ -44,6 +44,8 @@ describe("buildBoardColumns", () => {
     ]);
 
     expect(columns.map((column) => column.id)).toEqual([
+      "race-1:gp",
+      "race-2:sprint",
       "race-2:gp",
       "race-3:gp",
     ]);
@@ -59,6 +61,7 @@ describe("buildBoardColumns", () => {
     ]);
 
     expect(columns.map((column) => column.id)).toEqual([
+      "race-1:gp",
       "race-2:sprint",
       "race-2:gp",
     ]);

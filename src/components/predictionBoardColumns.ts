@@ -17,11 +17,7 @@ export function buildBoardColumns(races: readonly Race[]): BoardColumn[] {
       return [createBoardColumn(race, "sprint"), grandPrix];
     });
 
-  const latestCompletedColumn = findLatestCompletedColumn(columns);
-  return columns.filter(
-    (column) =>
-      !isBoardColumnCompleted(column) || column.id === latestCompletedColumn?.id,
-  );
+  return columns;
 }
 
 export function getInitialBoardColumnId(
