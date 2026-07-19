@@ -20,8 +20,9 @@ import MobilePredictionBoard from "./MobilePredictionBoard";
 import PredictionBoard from "./PredictionBoard";
 import {
   getPredictionDragPayload,
-  getPredictionRemovalSource,
   getPredictionDragStartPayload,
+  getPredictionMoveSource,
+  getPredictionRemovalSource,
   placeDriverAtPredictionPosition,
   type PredictionDragData,
 } from "./predictionDnd";
@@ -114,12 +115,20 @@ export default function PredictionWorkspace({
       over.session === "sprint"
         ? targetRace.sprintPrediction
         : targetRace.prediction;
+    const moveSource = getPredictionMoveSource(active, over);
     const nextOrder = placeDriverAtPredictionPosition(
       targetPrediction,
       active.driverId,
       over.index,
     );
     updatePrediction(targetRace.id, over.session, nextOrder);
+    if (moveSource) {
+      clearPredictionPosition(
+        moveSource.raceId,
+        moveSource.session,
+        moveSource.index,
+      );
+    }
   };
 
   return (

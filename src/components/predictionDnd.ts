@@ -28,6 +28,11 @@ export type PredictionDropData = {
   editable: boolean;
 };
 
+type PredictionSource = Pick<
+  Extract<PredictionDragData, { type: "prediction-driver" }>,
+  "raceId" | "session" | "index"
+>;
+
 export function getPredictionDragPayload(event: DragEndEvent) {
   return {
     active: event.active.data.current as PredictionDragData | undefined,
@@ -42,11 +47,26 @@ export function getPredictionDragStartPayload(event: DragStartEvent) {
 export function getPredictionRemovalSource(
   active: PredictionDragData | undefined,
   over: PredictionDropData | undefined,
-): Pick<
-  Extract<PredictionDragData, { type: "prediction-driver" }>,
-  "raceId" | "session" | "index"
-> | null {
+): PredictionSource | null {
   if (active?.type !== "prediction-driver" || (over && over.editable)) {
+    return null;
+  }
+
+  return {
+    raceId: active.raceId,
+    session: active.session,
+    index: active.index,
+  };
+}
+
+export function getPredictionMoveSource(
+  active: PredictionDragData,
+  over: PredictionDropData,
+): PredictionSource | null {
+  if (
+    active.type !== "prediction-driver" ||
+    (active.raceId === over.raceId && active.session === over.session)
+  ) {
     return null;
   }
 

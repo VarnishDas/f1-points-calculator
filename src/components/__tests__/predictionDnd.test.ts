@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { RACE_CLASSIFICATION_SIZE } from "../../constants/race";
 import {
+  getPredictionMoveSource,
   getPredictionRemovalSource,
   getPredictionDroppableId,
   getPredictionDraggableId,
@@ -137,6 +138,75 @@ describe("getPredictionRemovalSource", () => {
       getPredictionRemovalSource(
         { type: "pool-driver", driverId: "norris" },
         undefined,
+      ),
+    ).toBeNull();
+  });
+});
+
+describe("getPredictionMoveSource", () => {
+  const placedDriver = {
+    type: "prediction-driver" as const,
+    driverId: "norris",
+    raceId: "belgian-2026",
+    session: "grandPrix" as const,
+    index: 0,
+  };
+
+  it("returns the original position when moving to another race", () => {
+    expect(
+      getPredictionMoveSource(placedDriver, {
+        type: "prediction-cell",
+        raceId: "hungarian-2026",
+        session: "grandPrix",
+        index: 1,
+        editable: true,
+      }),
+    ).toEqual({
+      raceId: "belgian-2026",
+      session: "grandPrix",
+      index: 0,
+    });
+  });
+
+  it("returns the original position when moving between GP and Sprint", () => {
+    expect(
+      getPredictionMoveSource(placedDriver, {
+        type: "prediction-cell",
+        raceId: "belgian-2026",
+        session: "sprint",
+        index: 1,
+        editable: true,
+      }),
+    ).toEqual({
+      raceId: "belgian-2026",
+      session: "grandPrix",
+      index: 0,
+    });
+  });
+
+  it("does not separately clear the source when reordering one session", () => {
+    expect(
+      getPredictionMoveSource(placedDriver, {
+        type: "prediction-cell",
+        raceId: "belgian-2026",
+        session: "grandPrix",
+        index: 1,
+        editable: true,
+      }),
+    ).toBeNull();
+  });
+
+  it("does not clear a source for a driver dragged from the pool", () => {
+    expect(
+      getPredictionMoveSource(
+        { type: "pool-driver", driverId: "norris" },
+        {
+          type: "prediction-cell",
+          raceId: "hungarian-2026",
+          session: "grandPrix",
+          index: 1,
+          editable: true,
+        },
       ),
     ).toBeNull();
   });
