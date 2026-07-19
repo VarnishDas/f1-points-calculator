@@ -9,7 +9,9 @@ type AppHeaderProps = {
 
 export default function AppHeader({ onReset }: AppHeaderProps) {
   const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "failed">("idle");
+  const [isResetConfirmationOpen, setIsResetConfirmationOpen] = useState(false);
   const resetStatusTimerRef = useRef<number | null>(null);
+  const cancelResetButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(
     () => () => {
@@ -19,6 +21,17 @@ export default function AppHeader({ onReset }: AppHeaderProps) {
     },
     [],
   );
+
+  useEffect(() => {
+    if (!isResetConfirmationOpen) return;
+
+    cancelResetButtonRef.current?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsResetConfirmationOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [isResetConfirmationOpen]);
 
   const handleShare = async () => {
     const { races } = useCalculatorStore.getState();
@@ -43,65 +56,149 @@ export default function AppHeader({ onReset }: AppHeaderProps) {
     }
     resetStatusTimerRef.current = window.setTimeout(
       () => setShareStatus("idle"),
-      1500,
+      2500,
     );
   };
 
-  return (
-    <header className="flex shrink-0 items-center justify-between gap-2 border-b border-white/10 px-3 py-2 lg:px-4">
-      <div className="min-w-0">
-        <h1 className="truncate text-sm font-black tracking-tight text-white sm:text-lg">
-          Formula 1 Points Calculator
-        </h1>
-        <p className="mt-0.5 hidden truncate text-xs text-neutral-500 sm:block">
-          Drag drivers to simulate the championship
-        </p>
-      </div>
+  const confirmReset = () => {
+    onReset();
+    setIsResetConfirmationOpen(false);
+  };
 
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={onReset}
-          aria-label="Reset all predictions"
-          className="inline-flex h-10 w-10 items-center justify-center gap-1.5 rounded-md border border-white/10 bg-white/[0.03] text-xs font-semibold text-neutral-200 transition hover:border-white/20 hover:bg-white/[0.07] sm:h-8 sm:w-auto sm:px-3"
-        >
-          <span aria-hidden="true" className="text-base leading-none">
-            ↺
-          </span>
-          <span className="hidden sm:inline">Reset</span>
-        </button>
-        <button
-          type="button"
-          onClick={handleShare}
-          className="inline-flex h-10 w-10 items-center justify-center gap-1.5 rounded-md bg-red-600 text-xs font-bold text-white shadow-[0_0_22px_rgba(220,38,38,0.25)] transition hover:bg-red-500 sm:h-8 sm:w-auto sm:px-3"
-          aria-label={
-            shareStatus === "copied"
-              ? "Scenario URL copied to clipboard"
+  return (
+    <>
+      <header className="flex shrink-0 items-center justify-between gap-2 border-b border-white/10 px-3 py-2 lg:px-4">
+        <div className="min-w-0">
+          <h1 className="truncate text-sm font-black tracking-tight text-white sm:text-lg">
+            Formula 1 Points Calculator
+          </h1>
+          <p className="mt-0.5 hidden truncate text-xs text-neutral-500 sm:block">
+            Drag drivers to simulate the championship
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsResetConfirmationOpen(true)}
+            aria-label="Reset all predictions"
+            className="inline-flex h-10 w-10 items-center justify-center gap-1.5 rounded-md border border-white/10 bg-white/[0.03] text-xs font-semibold text-neutral-200 transition hover:border-white/20 hover:bg-white/[0.07] sm:h-8 sm:w-auto sm:px-3"
+          >
+            <span aria-hidden="true" className="text-base leading-none">
+              ↺
+            </span>
+            <span className="hidden sm:inline">Reset</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleShare}
+            className="inline-flex h-10 w-10 items-center justify-center gap-1.5 rounded-md bg-red-600 text-xs font-bold text-white shadow-[0_0_22px_rgba(220,38,38,0.25)] transition hover:bg-red-500 sm:h-8 sm:w-auto sm:px-3"
+            aria-label={
+              shareStatus === "copied"
+                ? "Scenario URL copied to clipboard"
+                : shareStatus === "failed"
+                  ? "Could not copy scenario URL"
+                  : "Share scenario URL"
+            }
+          >
+            <span aria-hidden="true" className="text-base leading-none">
+              ⤴
+            </span>
+            <span className="hidden sm:inline">
+              {shareStatus === "copied"
+                ? "Copied"
+                : shareStatus === "failed"
+                  ? "Copy failed"
+                  : "Share"}
+            </span>
+          </button>
+          <span className="sr-only" role="status" aria-live="polite">
+            {shareStatus === "copied"
+              ? "Scenario URL copied to clipboard."
               : shareStatus === "failed"
-                ? "Could not copy scenario URL"
-                : "Share scenario URL"
+                ? "Could not copy the scenario URL."
+                : ""}
+          </span>
+        </div>
+      </header>
+
+      {shareStatus !== "idle" ? (
+        <div
+          aria-hidden="true"
+          className={
+            shareStatus === "copied"
+              ? "fixed bottom-4 left-1/2 z-30 flex min-h-11 -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-emerald-400/25 bg-emerald-950/95 px-4 text-sm font-bold text-emerald-200 shadow-2xl shadow-black/50 sm:hidden"
+              : "fixed bottom-4 left-1/2 z-30 flex min-h-11 -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-red-400/25 bg-red-950/95 px-4 text-sm font-bold text-red-200 shadow-2xl shadow-black/50 sm:hidden"
           }
         >
-          <span aria-hidden="true" className="text-base leading-none">
-            ⤴
+          <span aria-hidden="true" className="text-base">
+            {shareStatus === "copied" ? "✓" : "!"}
           </span>
-          <span className="hidden sm:inline">
-            {shareStatus === "copied"
-              ? "Copied"
-              : shareStatus === "failed"
-                ? "Copy failed"
-                : "Share"}
-          </span>
-        </button>
-        <span className="sr-only" role="status" aria-live="polite">
           {shareStatus === "copied"
-            ? "Scenario URL copied to clipboard."
-            : shareStatus === "failed"
-              ? "Could not copy the scenario URL."
-              : ""}
-        </span>
-      </div>
-    </header>
+            ? "Prediction link copied"
+            : "Could not copy prediction link"}
+        </div>
+      ) : null}
+
+      {isResetConfirmationOpen ? (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 z-40 bg-black/75 backdrop-blur-[2px]"
+            onClick={() => setIsResetConfirmationOpen(false)}
+            aria-label="Cancel reset"
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reset-confirmation-title"
+            aria-describedby="reset-confirmation-description"
+            className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-1.5rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-xl border border-white/10 bg-neutral-950 p-5 shadow-2xl shadow-black"
+          >
+            <div className="flex items-start gap-3">
+              <span
+                aria-hidden="true"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-red-500/25 bg-red-500/10 text-xl text-red-300"
+              >
+                ↺
+              </span>
+              <div>
+                <h2
+                  id="reset-confirmation-title"
+                  className="text-base font-black text-white"
+                >
+                  Reset all predictions?
+                </h2>
+                <p
+                  id="reset-confirmation-description"
+                  className="mt-1 text-sm leading-relaxed text-neutral-400"
+                >
+                  This clears every Grand Prix and Sprint prediction. This action
+                  cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 grid grid-cols-2 gap-2">
+              <button
+                ref={cancelResetButtonRef}
+                type="button"
+                onClick={() => setIsResetConfirmationOpen(false)}
+                className="h-11 rounded-md border border-white/10 bg-white/[0.04] text-sm font-bold text-neutral-200 transition hover:bg-white/[0.08]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmReset}
+                className="h-11 rounded-md bg-red-600 text-sm font-black text-white shadow-[0_0_22px_rgba(220,38,38,0.2)] transition hover:bg-red-500"
+              >
+                Reset predictions
+              </button>
+            </div>
+          </div>
+        </>
+      ) : null}
+    </>
   );
 }
 
