@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { Driver } from "../types/driver";
 import type { PredictionSessionType, Race } from "../types/race";
@@ -43,6 +43,7 @@ export default function MobilePredictionBoard({
   const [session, setSession] = useState<PredictionSessionType>("grandPrix");
   const [selectedPosition, setSelectedPosition] = useState<number | null>(null);
   const [driverSearch, setDriverSearch] = useState("");
+  const pickerViewportRef = useRef<HTMLDivElement>(null);
 
   const selectedRaceIndex = Math.max(
     0,
@@ -59,6 +60,25 @@ export default function MobilePredictionBoard({
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [selectedPosition]);
+
+  useEffect(() => {
+    if (selectedPosition === null || !window.visualViewport) return;
+
+    const viewport = window.visualViewport;
+    const keepPickerAboveKeyboard = () => {
+      if (!pickerViewportRef.current) return;
+      pickerViewportRef.current.style.top = `${viewport.offsetTop}px`;
+      pickerViewportRef.current.style.height = `${viewport.height}px`;
+    };
+
+    keepPickerAboveKeyboard();
+    viewport.addEventListener("resize", keepPickerAboveKeyboard);
+    viewport.addEventListener("scroll", keepPickerAboveKeyboard);
+    return () => {
+      viewport.removeEventListener("resize", keepPickerAboveKeyboard);
+      viewport.removeEventListener("scroll", keepPickerAboveKeyboard);
+    };
   }, [selectedPosition]);
 
   const activeDriverIdSet = useMemo(
@@ -281,81 +301,86 @@ export default function MobilePredictionBoard({
             aria-label="Close driver picker"
           />
           <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="driver-picker-title"
-            className="fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[78dvh] max-w-lg overflow-hidden rounded-t-2xl border border-white/10 bg-neutral-950 shadow-2xl shadow-black"
+            ref={pickerViewportRef}
+            className="pointer-events-none fixed inset-x-0 top-0 z-50 flex h-dvh items-end justify-center"
           >
-            <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-              <div>
-                <h3 id="driver-picker-title" className="text-sm font-black text-white">
-                  Choose driver for P{selectedPosition + 1}
-                </h3>
-                <p className="mt-0.5 text-[11px] text-neutral-500">
-                  {formatRaceName(selectedRace.name)} · {session === "sprint" ? "Sprint" : "Grand Prix"}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedPosition(null)}
-                className="grid h-10 w-10 place-items-center rounded-md border border-white/10 text-lg text-neutral-300"
-                aria-label="Close driver picker"
-              >
-                ×
-              </button>
-            </div>
-            <div className="border-b border-white/10 p-3">
-              <input
-                type="search"
-                value={driverSearch}
-                onChange={(event) => setDriverSearch(event.target.value)}
-                placeholder="Search drivers or teams"
-                className="h-11 w-full rounded-md border border-white/10 bg-white/[0.04] px-3 text-sm text-white placeholder:text-neutral-600"
-              />
-            </div>
-            <div className="custom-scrollbar max-h-[55dvh] overflow-y-auto p-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
-              {currentDriverId ? (
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="driver-picker-title"
+              className="pointer-events-auto flex max-h-[78%] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border border-white/10 bg-neutral-950 shadow-2xl shadow-black"
+            >
+              <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
+                <div>
+                  <h3 id="driver-picker-title" className="text-sm font-black text-white">
+                    Choose driver for P{selectedPosition + 1}
+                  </h3>
+                  <p className="mt-0.5 text-[11px] text-neutral-500">
+                    {formatRaceName(selectedRace.name)} · {session === "sprint" ? "Sprint" : "Grand Prix"}
+                  </p>
+                </div>
                 <button
                   type="button"
-                  onClick={clearSelectedPosition}
-                  className="mb-3 h-11 w-full rounded-md border border-red-500/25 bg-red-500/10 text-xs font-bold text-red-300"
+                  onClick={() => setSelectedPosition(null)}
+                  className="grid h-10 w-10 place-items-center rounded-md border border-white/10 text-lg text-neutral-300"
+                  aria-label="Close driver picker"
                 >
-                  Remove {driverById.get(currentDriverId)?.lastName ?? "driver"} from P{selectedPosition + 1}
+                  ×
                 </button>
-              ) : null}
-              <div className="grid grid-cols-2 gap-2">
-                {filteredDrivers.map((driver) => {
-                  const team = teamById.get(driver.teamId);
-                  const assignedPosition = prediction?.indexOf(driver.id) ?? -1;
-                  return (
-                    <button
-                      key={driver.id}
-                      type="button"
-                      onClick={() => placeDriver(driver.id)}
-                      className="relative min-h-14 overflow-hidden rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-left"
-                    >
-                      <span
-                        aria-hidden="true"
-                        className="absolute inset-y-2 left-1.5 w-0.5 rounded-full"
-                        style={{ backgroundColor: team?.color ?? "#737373" }}
-                      />
-                      <span className="block truncate pl-1.5 text-xs font-black text-white">
-                        {driver.lastName}
-                      </span>
-                      <span className="mt-0.5 block truncate pl-1.5 text-[10px] text-neutral-500">
-                        {assignedPosition >= 0
-                          ? `${team?.name ?? driver.teamId} · P${assignedPosition + 1}`
-                          : team?.name ?? driver.teamId}
-                      </span>
-                    </button>
-                  );
-                })}
               </div>
-              {filteredDrivers.length === 0 ? (
-                <p className="py-8 text-center text-sm text-neutral-500">
-                  No drivers found.
-                </p>
-              ) : null}
+              <div className="shrink-0 border-b border-white/10 p-3">
+                <input
+                  type="search"
+                  value={driverSearch}
+                  onChange={(event) => setDriverSearch(event.target.value)}
+                  placeholder="Search drivers or teams"
+                  className="driver-search-input h-11 w-full rounded-md border border-white/10 bg-white/[0.04] px-3 text-base text-white placeholder:text-neutral-600"
+                />
+              </div>
+              <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto p-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                {currentDriverId ? (
+                  <button
+                    type="button"
+                    onClick={clearSelectedPosition}
+                    className="mb-3 h-11 w-full rounded-md border border-red-500/25 bg-red-500/10 text-xs font-bold text-red-300"
+                  >
+                    Remove {driverById.get(currentDriverId)?.lastName ?? "driver"} from P{selectedPosition + 1}
+                  </button>
+                ) : null}
+                <div className="grid grid-cols-2 gap-2">
+                  {filteredDrivers.map((driver) => {
+                    const team = teamById.get(driver.teamId);
+                    const assignedPosition = prediction?.indexOf(driver.id) ?? -1;
+                    return (
+                      <button
+                        key={driver.id}
+                        type="button"
+                        onClick={() => placeDriver(driver.id)}
+                        className="relative min-h-14 overflow-hidden rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-left"
+                      >
+                        <span
+                          aria-hidden="true"
+                          className="absolute inset-y-2 left-1.5 w-0.5 rounded-full"
+                          style={{ backgroundColor: team?.color ?? "#737373" }}
+                        />
+                        <span className="block truncate pl-1.5 text-xs font-black text-white">
+                          {driver.lastName}
+                        </span>
+                        <span className="mt-0.5 block truncate pl-1.5 text-[10px] text-neutral-500">
+                          {assignedPosition >= 0
+                            ? `${team?.name ?? driver.teamId} · P${assignedPosition + 1}`
+                            : team?.name ?? driver.teamId}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {filteredDrivers.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-neutral-500">
+                    No drivers found.
+                  </p>
+                ) : null}
+              </div>
             </div>
           </div>
         </>
