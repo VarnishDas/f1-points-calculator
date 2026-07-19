@@ -1,4 +1,3 @@
-import { useDroppable } from "@dnd-kit/core";
 import { useMemo } from "react";
 
 import type { Driver } from "../types/driver";
@@ -28,22 +27,8 @@ export default function DriverPool({
     () => drivers.filter((driver) => activeDriverIdSet.has(driver.id)),
     [activeDriverIdSet, drivers],
   );
-  const { setNodeRef, isOver } = useDroppable({
-    id: "driver-pool",
-    data: {
-      type: "driver-pool",
-    },
-  });
-
   return (
-    <section
-      ref={setNodeRef}
-      className={
-        isOver
-          ? "shrink-0 rounded-md border border-amber-400/60 bg-amber-400/10 shadow-2xl shadow-black/25"
-          : "shrink-0 rounded-md border border-white/10 bg-neutral-950/75 shadow-2xl shadow-black/25"
-      }
-    >
+    <section className="shrink-0 rounded-md border border-white/10 bg-neutral-950/75 shadow-2xl shadow-black/25">
       <div className="flex flex-col gap-0.5 border-b border-white/10 px-3 py-2 sm:flex-row sm:items-baseline sm:gap-3">
         <h2 className="text-xs font-black uppercase tracking-[0.12em] text-neutral-100">
           Driver Pool

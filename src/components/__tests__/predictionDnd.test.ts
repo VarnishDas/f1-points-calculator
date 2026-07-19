@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { RACE_CLASSIFICATION_SIZE } from "../../constants/race";
 import {
+  getPredictionRemovalSource,
   getPredictionDroppableId,
   getPredictionDraggableId,
   placeDriverAtPredictionPosition,
@@ -83,5 +84,60 @@ describe("placeDriverAtPredictionPosition", () => {
 
     expect(result).toHaveLength(2);
     expect(result[1]).toBe("norris");
+  });
+});
+
+describe("getPredictionRemovalSource", () => {
+  const placedDriver = {
+    type: "prediction-driver" as const,
+    driverId: "norris",
+    raceId: "belgian-2026",
+    session: "grandPrix" as const,
+    index: 0,
+  };
+
+  it("removes a placed driver when it is released outside a placement cell", () => {
+    expect(getPredictionRemovalSource(placedDriver, undefined)).toEqual({
+      raceId: "belgian-2026",
+      session: "grandPrix",
+      index: 0,
+    });
+  });
+
+  it("removes a placed driver when it is released over a non-editable cell", () => {
+    expect(
+      getPredictionRemovalSource(placedDriver, {
+        type: "prediction-cell",
+        raceId: "australian-2026",
+        session: "grandPrix",
+        index: 0,
+        editable: false,
+      }),
+    ).toEqual({
+      raceId: "belgian-2026",
+      session: "grandPrix",
+      index: 0,
+    });
+  });
+
+  it("keeps a placed driver when it is released over an editable cell", () => {
+    expect(
+      getPredictionRemovalSource(placedDriver, {
+        type: "prediction-cell",
+        raceId: "belgian-2026",
+        session: "grandPrix",
+        index: 1,
+        editable: true,
+      }),
+    ).toBeNull();
+  });
+
+  it("does not remove a driver dragged from the pool", () => {
+    expect(
+      getPredictionRemovalSource(
+        { type: "pool-driver", driverId: "norris" },
+        undefined,
+      ),
+    ).toBeNull();
   });
 });

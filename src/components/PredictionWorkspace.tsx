@@ -20,6 +20,7 @@ import MobilePredictionBoard from "./MobilePredictionBoard";
 import PredictionBoard from "./PredictionBoard";
 import {
   getPredictionDragPayload,
+  getPredictionRemovalSource,
   getPredictionDragStartPayload,
   placeDriverAtPredictionPosition,
   type PredictionDragData,
@@ -81,17 +82,17 @@ export default function PredictionWorkspace({
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveDrag(null);
     const { active, over } = getPredictionDragPayload(event);
-    if (!active || !over) {
+    const removalSource = getPredictionRemovalSource(active, over);
+    if (removalSource) {
+      clearPredictionPosition(
+        removalSource.raceId,
+        removalSource.session,
+        removalSource.index,
+      );
       return;
     }
 
-    if (over.type === "driver-pool") {
-      if (active.type === "prediction-driver") {
-        const sourceRace = races.find((race) => race.id === active.raceId);
-        if (sourceRace?.status === "upcoming") {
-          clearPredictionPosition(active.raceId, active.session, active.index);
-        }
-      }
+    if (!active || !over) {
       return;
     }
 
