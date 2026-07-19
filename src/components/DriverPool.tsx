@@ -52,7 +52,7 @@ export default function DriverPool({
           Drag a driver to a prediction position
         </p>
       </div>
-      <div className="custom-scrollbar grid grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] gap-2 overflow-visible p-2.5 sm:grid-cols-[repeat(auto-fill,minmax(5.5rem,1fr))] sm:gap-1.5 sm:p-2 lg:max-h-36 lg:overflow-auto xl:max-h-none xl:overflow-visible">
+      <div className="custom-scrollbar grid grid-cols-[repeat(auto-fill,minmax(6.25rem,1fr))] gap-2 overflow-visible p-2.5 sm:gap-1.5 sm:p-2 lg:max-h-36 lg:overflow-auto xl:max-h-none xl:overflow-visible">
         {activeDrivers.map((driver) => (
           <DriverTile
             key={driver.id}

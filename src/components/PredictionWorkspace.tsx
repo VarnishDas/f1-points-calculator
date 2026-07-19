@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -16,6 +16,7 @@ import type { Team } from "../types/team";
 import { useCalculatorStore } from "../store/useCalculatorStore";
 import DriverPool from "./DriverPool";
 import { DriverTilePreview } from "./DriverTile";
+import MobilePredictionBoard from "./MobilePredictionBoard";
 import PredictionBoard from "./PredictionBoard";
 import {
   getPredictionDragPayload,
@@ -41,6 +42,7 @@ export default function PredictionWorkspace({
   const clearPredictionPosition = useCalculatorStore(
     (state) => state.clearPredictionPosition,
   );
+  const isDesktop = useDesktopLayout();
   const [activeDrag, setActiveDrag] = useState<PredictionDragData | null>(null);
   const sensors = useSensors(useSensor(PointerSensor));
   const driverById = useMemo(
@@ -53,6 +55,24 @@ export default function PredictionWorkspace({
   );
   const activeDriver = activeDrag ? driverById.get(activeDrag.driverId) : undefined;
   const activeTeam = activeDriver ? teamById.get(activeDriver.teamId) : undefined;
+
+  if (!isDesktop) {
+    return (
+      <section
+        aria-label="Prediction workspace"
+        className="flex min-w-0 flex-col gap-3"
+      >
+        <MobilePredictionBoard
+          races={races}
+          drivers={drivers}
+          teams={teams}
+          activeDriverIds={activeDriverIds}
+          onUpdatePrediction={updatePrediction}
+          onClearPosition={clearPredictionPosition}
+        />
+      </section>
+    );
+  }
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveDrag(getPredictionDragStartPayload(event));
@@ -131,4 +151,21 @@ export default function PredictionWorkspace({
       </DndContext>
     </section>
   );
+}
+
+function useDesktopLayout(): boolean {
+  const query = "(min-width: 1024px)";
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window === "undefined" ? true : window.matchMedia(query).matches,
+  );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(query);
+    const updateLayout = () => setIsDesktop(mediaQuery.matches);
+    updateLayout();
+    mediaQuery.addEventListener("change", updateLayout);
+    return () => mediaQuery.removeEventListener("change", updateLayout);
+  }, []);
+
+  return isDesktop;
 }

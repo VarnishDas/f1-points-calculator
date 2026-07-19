@@ -13,7 +13,7 @@ export default function DashboardLayout({
   const [isStandingsOpen, setIsStandingsOpen] = useState(false);
 
   return (
-    <div className="grid flex-1 gap-3 p-3 lg:min-h-0 lg:grid-cols-[320px_minmax(0,1fr)] lg:overflow-hidden">
+    <div className="grid flex-1 gap-3 p-3 lg:min-h-0 lg:grid-cols-[280px_minmax(0,1fr)] lg:overflow-hidden">
       <div className="min-w-0 lg:flex lg:min-h-0 lg:flex-col lg:overflow-hidden">
         <button
           type="button"

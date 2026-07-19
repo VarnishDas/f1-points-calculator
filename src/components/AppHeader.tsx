@@ -48,12 +48,12 @@ export default function AppHeader({ onReset }: AppHeaderProps) {
   };
 
   return (
-    <header className="flex shrink-0 flex-col gap-2 border-b border-white/10 px-3 py-2 sm:flex-row sm:items-center sm:justify-between lg:px-4">
+    <header className="flex shrink-0 items-center justify-between gap-2 border-b border-white/10 px-3 py-2 lg:px-4">
       <div className="min-w-0">
-        <h1 className="text-base font-black tracking-tight text-white sm:text-lg">
+        <h1 className="truncate text-sm font-black tracking-tight text-white sm:text-lg">
           Formula 1 Points Calculator
         </h1>
-        <p className="mt-0.5 truncate text-xs text-neutral-500">
+        <p className="mt-0.5 hidden truncate text-xs text-neutral-500 sm:block">
           Drag drivers to simulate the championship
         </p>
       </div>
@@ -63,17 +63,17 @@ export default function AppHeader({ onReset }: AppHeaderProps) {
           type="button"
           onClick={onReset}
           aria-label="Reset all predictions"
-          className="inline-flex h-10 items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.03] px-3 text-xs font-semibold text-neutral-200 transition hover:border-white/20 hover:bg-white/[0.07] sm:h-8"
+          className="inline-flex h-10 w-10 items-center justify-center gap-1.5 rounded-md border border-white/10 bg-white/[0.03] text-xs font-semibold text-neutral-200 transition hover:border-white/20 hover:bg-white/[0.07] sm:h-8 sm:w-auto sm:px-3"
         >
           <span aria-hidden="true" className="text-base leading-none">
             ↺
           </span>
-          Reset
+          <span className="hidden sm:inline">Reset</span>
         </button>
         <button
           type="button"
           onClick={handleShare}
-          className="inline-flex h-10 items-center gap-1.5 rounded-md bg-red-600 px-3 text-xs font-bold text-white shadow-[0_0_22px_rgba(220,38,38,0.25)] transition hover:bg-red-500 sm:h-8"
+          className="inline-flex h-10 w-10 items-center justify-center gap-1.5 rounded-md bg-red-600 text-xs font-bold text-white shadow-[0_0_22px_rgba(220,38,38,0.25)] transition hover:bg-red-500 sm:h-8 sm:w-auto sm:px-3"
           aria-label={
             shareStatus === "copied"
               ? "Scenario URL copied to clipboard"
@@ -85,11 +85,13 @@ export default function AppHeader({ onReset }: AppHeaderProps) {
           <span aria-hidden="true" className="text-base leading-none">
             ⤴
           </span>
-          {shareStatus === "copied"
-            ? "Copied"
-            : shareStatus === "failed"
-              ? "Copy failed"
-              : "Share"}
+          <span className="hidden sm:inline">
+            {shareStatus === "copied"
+              ? "Copied"
+              : shareStatus === "failed"
+                ? "Copy failed"
+                : "Share"}
+          </span>
         </button>
         <span className="sr-only" role="status" aria-live="polite">
           {shareStatus === "copied"
