@@ -21,14 +21,17 @@ export type PredictionDragData =
     };
 
 export type PredictionDropData = {
-  type: "driver-pool";
-} | {
   type: "prediction-cell";
   session: PredictionSessionType;
   raceId: string;
   index: number;
   editable: boolean;
 };
+
+type PredictionSource = Pick<
+  Extract<PredictionDragData, { type: "prediction-driver" }>,
+  "raceId" | "session" | "index"
+>;
 
 export function getPredictionDragPayload(event: DragEndEvent) {
   return {
@@ -39,6 +42,39 @@ export function getPredictionDragPayload(event: DragEndEvent) {
 
 export function getPredictionDragStartPayload(event: DragStartEvent) {
   return (event.active.data.current as PredictionDragData | undefined) ?? null;
+}
+
+export function getPredictionRemovalSource(
+  active: PredictionDragData | undefined,
+  over: PredictionDropData | undefined,
+): PredictionSource | null {
+  if (active?.type !== "prediction-driver" || (over && over.editable)) {
+    return null;
+  }
+
+  return {
+    raceId: active.raceId,
+    session: active.session,
+    index: active.index,
+  };
+}
+
+export function getPredictionMoveSource(
+  active: PredictionDragData,
+  over: PredictionDropData,
+): PredictionSource | null {
+  if (
+    active.type !== "prediction-driver" ||
+    (active.raceId === over.raceId && active.session === over.session)
+  ) {
+    return null;
+  }
+
+  return {
+    raceId: active.raceId,
+    session: active.session,
+    index: active.index,
+  };
 }
 
 export function placeDriverAtPredictionPosition(

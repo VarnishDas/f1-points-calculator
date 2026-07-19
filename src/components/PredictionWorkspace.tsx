@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -16,10 +16,13 @@ import type { Team } from "../types/team";
 import { useCalculatorStore } from "../store/useCalculatorStore";
 import DriverPool from "./DriverPool";
 import { DriverTilePreview } from "./DriverTile";
+import MobilePredictionBoard from "./MobilePredictionBoard";
 import PredictionBoard from "./PredictionBoard";
 import {
   getPredictionDragPayload,
   getPredictionDragStartPayload,
+  getPredictionMoveSource,
+  getPredictionRemovalSource,
   placeDriverAtPredictionPosition,
   type PredictionDragData,
 } from "./predictionDnd";
@@ -41,6 +44,7 @@ export default function PredictionWorkspace({
   const clearPredictionPosition = useCalculatorStore(
     (state) => state.clearPredictionPosition,
   );
+  const isDesktop = useDesktopLayout();
   const [activeDrag, setActiveDrag] = useState<PredictionDragData | null>(null);
   const sensors = useSensors(useSensor(PointerSensor));
   const driverById = useMemo(
@@ -54,6 +58,24 @@ export default function PredictionWorkspace({
   const activeDriver = activeDrag ? driverById.get(activeDrag.driverId) : undefined;
   const activeTeam = activeDriver ? teamById.get(activeDriver.teamId) : undefined;
 
+  if (!isDesktop) {
+    return (
+      <section
+        aria-label="Prediction workspace"
+        className="flex min-w-0 flex-col gap-3"
+      >
+        <MobilePredictionBoard
+          races={races}
+          drivers={drivers}
+          teams={teams}
+          activeDriverIds={activeDriverIds}
+          onUpdatePrediction={updatePrediction}
+          onClearPosition={clearPredictionPosition}
+        />
+      </section>
+    );
+  }
+
   const handleDragStart = (event: DragStartEvent) => {
     setActiveDrag(getPredictionDragStartPayload(event));
   };
@@ -61,17 +83,17 @@ export default function PredictionWorkspace({
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveDrag(null);
     const { active, over } = getPredictionDragPayload(event);
-    if (!active || !over) {
+    const removalSource = getPredictionRemovalSource(active, over);
+    if (removalSource) {
+      clearPredictionPosition(
+        removalSource.raceId,
+        removalSource.session,
+        removalSource.index,
+      );
       return;
     }
 
-    if (over.type === "driver-pool") {
-      if (active.type === "prediction-driver") {
-        const sourceRace = races.find((race) => race.id === active.raceId);
-        if (sourceRace?.status === "upcoming") {
-          clearPredictionPosition(active.raceId, active.session, active.index);
-        }
-      }
+    if (!active || !over) {
       return;
     }
 
@@ -93,12 +115,20 @@ export default function PredictionWorkspace({
       over.session === "sprint"
         ? targetRace.sprintPrediction
         : targetRace.prediction;
+    const moveSource = getPredictionMoveSource(active, over);
     const nextOrder = placeDriverAtPredictionPosition(
       targetPrediction,
       active.driverId,
       over.index,
     );
     updatePrediction(targetRace.id, over.session, nextOrder);
+    if (moveSource) {
+      clearPredictionPosition(
+        moveSource.raceId,
+        moveSource.session,
+        moveSource.index,
+      );
+    }
   };
 
   return (
@@ -131,4 +161,21 @@ export default function PredictionWorkspace({
       </DndContext>
     </section>
   );
+}
+
+function useDesktopLayout(): boolean {
+  const query = "(min-width: 1024px)";
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window === "undefined" ? true : window.matchMedia(query).matches,
+  );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(query);
+    const updateLayout = () => setIsDesktop(mediaQuery.matches);
+    updateLayout();
+    mediaQuery.addEventListener("change", updateLayout);
+    return () => mediaQuery.removeEventListener("change", updateLayout);
+  }, []);
+
+  return isDesktop;
 }

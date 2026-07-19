@@ -104,10 +104,7 @@ export default function StandingsPanel({
                           className="h-4 w-1 shrink-0 rounded-full"
                           style={{ backgroundColor: team?.color ?? "#737373" }}
                         />
-                        <span className="w-9 shrink-0 font-black tracking-[0.16em] text-neutral-100">
-                          {driver?.code ?? standing.driverId.slice(0, 3)}
-                        </span>
-                        <span className="truncate text-neutral-500">
+                        <span className="min-w-0 flex-1 truncate font-black text-neutral-100">
                           {driver?.lastName ?? standing.driverId}
                         </span>
                         {wdcStatus === "champion" ? (

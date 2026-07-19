@@ -116,8 +116,8 @@ function TileContent({
           aria-hidden="true"
           className="absolute inset-y-1 left-1 w-0.5 rounded-full bg-[var(--team-color)]"
         />
-        <span className="font-black tracking-[0.08em] text-[var(--team-color)]">
-          {driver.code}
+        <span className="max-w-full truncate px-1.5 text-[9px] font-black tracking-[0.02em] text-[var(--team-color)]">
+          {driver.lastName}
         </span>
       </>
     );
@@ -132,10 +132,10 @@ function TileContent({
         aria-hidden="true"
         className="absolute inset-y-1.5 left-1.5 w-0.5 rounded-full bg-[var(--team-color)]"
       />
-      <span className="block pl-2.5 text-xs font-black tracking-[0.12em] text-white">
-        {driver.code}
+      <span className="block truncate pl-2 text-[11px] font-black text-white">
+        {driver.lastName}
       </span>
-      <span className="mt-0.5 block truncate pl-2.5 text-[10px] font-semibold text-neutral-400">
+      <span className="mt-0.5 block truncate pl-2 text-[10px] font-semibold text-neutral-400">
         {team?.name ?? driver.teamId}
       </span>
     </>
