@@ -3,7 +3,7 @@ name: Update F1 data
 on:
   workflow_dispatch:
   schedule:
-    - cron: "30 5 * * 1"
+    - cron: "30 2 * * 1"
 
 permissions:
   contents: write
