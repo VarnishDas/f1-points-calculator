@@ -302,13 +302,13 @@ export default function MobilePredictionBoard({
           />
           <div
             ref={pickerViewportRef}
-            className="pointer-events-none fixed inset-x-0 top-0 z-50 flex h-dvh items-end justify-center"
+            className="pointer-events-none fixed inset-x-0 top-0 z-50 flex h-dvh items-center justify-center px-3"
           >
             <div
               role="dialog"
               aria-modal="true"
               aria-labelledby="driver-picker-title"
-              className="pointer-events-auto flex max-h-[78%] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl border border-white/10 bg-neutral-950 shadow-2xl shadow-black"
+              className="pointer-events-auto flex max-h-[78%] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-white/10 bg-neutral-950 shadow-2xl shadow-black"
             >
               <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
                 <div>
