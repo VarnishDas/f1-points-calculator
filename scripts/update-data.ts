@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { z } from "zod";
@@ -564,6 +565,15 @@ export function getCalendarChanges(
   return changes;
 }
 
+export function hasDataChanges(
+  existing: ExistingData,
+  generated: GeneratedData,
+): boolean {
+  return !isDeepStrictEqual(existing.drivers, generated.drivers) ||
+    !isDeepStrictEqual(existing.teams, generated.teams) ||
+    !isDeepStrictEqual(existing.races, generated.races);
+}
+
 function validateResult(
   result: readonly EventResultEntry[] | null | undefined,
   raceId: string,
@@ -725,6 +735,7 @@ async function main(): Promise<void> {
   const source = await fetchSourceData(APP_SEASON);
   const generated = transformSourceData(source, existing, APP_SEASON);
   const calendarChanges = getCalendarChanges(existing.races, generated.races);
+  const dataChanged = hasDataChanges(existing, generated);
 
   console.log(
     calendarChanges.length
@@ -734,8 +745,14 @@ async function main(): Promise<void> {
 
   if (dryRun) {
     console.log(
-      `Dry run OK: ${generated.drivers.length} drivers, ${generated.teams.length} teams, ${generated.races.length} races.`,
+      `Dry run OK (${dataChanged ? "changes found" : "no changes"}): ${generated.drivers.length} drivers, ${generated.teams.length} teams, ${generated.races.length} races.`,
     );
+    for (const warning of generated.metadata.warnings) console.warn(warning);
+    return;
+  }
+
+  if (!dataChanged) {
+    console.log("No driver, team, or race changes found; data files were not updated.");
     for (const warning of generated.metadata.warnings) console.warn(warning);
     return;
   }

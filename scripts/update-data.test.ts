@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   getCalendarChanges,
+  hasDataChanges,
   normalizeSourceId,
   transformSourceData,
   validateGeneratedData,
@@ -520,6 +521,63 @@ describe("getCalendarChanges", () => {
       "Added round 3: Australian Grand Prix",
       "Removed round 2: Saudi Arabian Grand Prix",
     ]);
+  });
+});
+
+describe("hasDataChanges", () => {
+  it("ignores metadata-only changes", () => {
+    const generated = transformSourceData(
+      source,
+      existing,
+      2026,
+      "2026-07-05T00:00:00.000Z",
+    );
+    const matchingExisting: ExistingData = {
+      drivers: generated.drivers,
+      teams: generated.teams,
+      races: generated.races,
+    };
+
+    expect(hasDataChanges(matchingExisting, {
+      ...generated,
+      metadata: {
+        ...generated.metadata,
+        generatedAt: "2026-07-06T00:00:00.000Z",
+      },
+    })).toBe(false);
+  });
+
+  it("detects driver, team, and race changes", () => {
+    const generated = transformSourceData(
+      source,
+      existing,
+      2026,
+      "2026-07-05T00:00:00.000Z",
+    );
+    const matchingExisting: ExistingData = {
+      drivers: generated.drivers,
+      teams: generated.teams,
+      races: generated.races,
+    };
+
+    expect(hasDataChanges(matchingExisting, {
+      ...generated,
+      drivers: generated.drivers.map((driver, index) =>
+        index === 0 ? { ...driver, number: 99 } : driver,
+      ),
+    })).toBe(true);
+    expect(hasDataChanges(matchingExisting, {
+      ...generated,
+      teams: generated.teams.map((team, index) =>
+        index === 0 ? { ...team, name: "Updated team" } : team,
+      ),
+    })).toBe(true);
+    expect(hasDataChanges(matchingExisting, {
+      ...generated,
+      races: generated.races.map((race, index) =>
+        index === 0 ? { ...race, date: "2026-03-09" } : race,
+      ),
+    })).toBe(true);
   });
 });
 
