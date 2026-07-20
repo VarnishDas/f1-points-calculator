@@ -235,7 +235,7 @@ export default function MobilePredictionBoard({
         ) : null}
       </div>
 
-      <div className="grid grid-cols-2 gap-2 p-2.5">
+      <div className="grid grid-cols-2 gap-2 p-2.5 pb-[22px]">
         {Array.from({ length: classificationSize }, (_, positionIndex) => {
           const officialEntry = officialResult?.find(
             (entry) => entry.position === positionIndex + 1,
@@ -253,8 +253,8 @@ export default function MobilePredictionBoard({
               disabled={!isEditable}
               className={
                 driver
-                  ? "relative flex h-14 min-w-0 items-center gap-2 overflow-hidden rounded-md border border-white/10 bg-white/[0.05] px-2 text-left"
-                  : "flex h-14 min-w-0 items-center gap-2 rounded-md border border-dashed border-white/15 bg-black/20 px-2 text-left"
+                  ? "relative flex h-14 min-w-0 items-center gap-2 overflow-hidden rounded-md border border-white/10 bg-white/[0.05] px-2 text-left even:translate-y-3"
+                  : "flex h-14 min-w-0 items-center gap-2 rounded-md border border-dashed border-white/15 bg-black/20 px-2 text-left even:translate-y-3"
               }
               aria-label={
                 driver
