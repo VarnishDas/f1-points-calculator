@@ -351,25 +351,42 @@ export default function MobilePredictionBoard({
                   {filteredDrivers.map((driver) => {
                     const team = teamById.get(driver.teamId);
                     const assignedPosition = prediction?.indexOf(driver.id) ?? -1;
+                    const isAssigned = assignedPosition >= 0;
                     return (
                       <button
                         key={driver.id}
                         type="button"
                         onClick={() => placeDriver(driver.id)}
-                        className="relative min-h-14 overflow-hidden rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-left"
+                        aria-label={`${driver.firstName} ${driver.lastName}${
+                          isAssigned
+                            ? `, already placed at position ${assignedPosition + 1}`
+                            : ""
+                        }`}
+                        className={
+                          isAssigned
+                            ? "relative min-h-14 overflow-hidden rounded-md border border-emerald-400/50 bg-emerald-400/10 px-3 py-2 text-left ring-1 ring-inset ring-emerald-400/15"
+                            : "relative min-h-14 overflow-hidden rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-left"
+                        }
                       >
                         <span
                           aria-hidden="true"
                           className="absolute inset-y-2 left-1.5 w-0.5 rounded-full"
                           style={{ backgroundColor: team?.color ?? "#737373" }}
                         />
-                        <span className="block truncate pl-1.5 text-xs font-black text-white">
+                        {isAssigned ? (
+                          <span className="absolute right-2 top-2 rounded bg-emerald-400/15 px-1.5 py-0.5 text-[9px] font-black tabular-nums text-emerald-300 ring-1 ring-inset ring-emerald-400/30">
+                            ✓ P{assignedPosition + 1}
+                          </span>
+                        ) : null}
+                        <span
+                          className={`block truncate pl-1.5 text-xs font-black text-white ${
+                            isAssigned ? "pr-12" : ""
+                          }`}
+                        >
                           {driver.lastName}
                         </span>
                         <span className="mt-0.5 block truncate pl-1.5 text-[10px] text-neutral-500">
-                          {assignedPosition >= 0
-                            ? `${team?.name ?? driver.teamId} · P${assignedPosition + 1}`
-                            : team?.name ?? driver.teamId}
+                          {team?.name ?? driver.teamId}
                         </span>
                       </button>
                     );
