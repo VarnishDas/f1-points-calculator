@@ -235,7 +235,7 @@ export default function MobilePredictionBoard({
         ) : null}
       </div>
 
-      <div className="grid grid-cols-2 gap-2 p-2.5 pb-[22px]">
+      <div className="grid grid-cols-2 gap-x-6 gap-y-8 bg-black/20 px-3 pb-16 pt-4">
         {Array.from({ length: classificationSize }, (_, positionIndex) => {
           const officialEntry = officialResult?.find(
             (entry) => entry.position === positionIndex + 1,
@@ -251,11 +251,7 @@ export default function MobilePredictionBoard({
               type="button"
               onClick={() => openDriverPicker(positionIndex)}
               disabled={!isEditable}
-              className={
-                driver
-                  ? "relative flex h-14 min-w-0 items-center gap-2 overflow-hidden rounded-md border border-white/10 bg-white/[0.05] px-2 text-left even:translate-y-3"
-                  : "flex h-14 min-w-0 items-center gap-2 rounded-md border border-dashed border-white/15 bg-black/20 px-2 text-left even:translate-y-3"
-              }
+              className="mobile-grid-slot relative flex h-20 w-[calc(100%-1.5rem)] min-w-0 justify-self-start items-center gap-2 overflow-visible px-2 text-left even:translate-y-10"
               aria-label={
                 driver
                   ? `Position ${positionIndex + 1}, ${driver.lastName}`
@@ -263,7 +259,7 @@ export default function MobilePredictionBoard({
               }
               aria-haspopup={isEditable ? "dialog" : undefined}
             >
-              <span className="grid h-7 w-8 shrink-0 place-items-center rounded bg-white/[0.06] text-[11px] font-black tabular-nums text-neutral-300">
+              <span className="grid h-7 w-8 shrink-0 place-items-center text-[11px] font-black tabular-nums text-neutral-300">
                 P{positionIndex + 1}
               </span>
               {driver ? (
