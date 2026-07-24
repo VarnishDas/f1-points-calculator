@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { Driver } from "../types/driver";
 import type { PredictionSessionType, Race } from "../types/race";
@@ -101,28 +101,59 @@ export default function MobilePredictionBoard({
     [teams],
   );
 
+  const prediction = selectedRace
+    ? session === "sprint"
+      ? selectedRace.sprintPrediction
+      : selectedRace.prediction
+    : null;
+  const isEditable = selectedRace
+    ? isPredictionSessionEditable(selectedRace, session)
+    : false;
+  const filteredDrivers = useMemo(
+    () =>
+      activeDrivers.filter((driver) =>
+        `${driver.firstName} ${driver.lastName} ${teamById.get(driver.teamId)?.name ?? ""}`
+          .toLocaleLowerCase()
+          .includes(driverSearch.trim().toLocaleLowerCase()),
+      ),
+    [activeDrivers, driverSearch, teamById],
+  );
+
+  const openDriverPicker = useCallback(
+    (positionIndex: number) => {
+      if (!isEditable) return;
+      setDriverSearch("");
+      setSelectedPosition(positionIndex);
+    },
+    [isEditable],
+  );
+
+  const placeDriver = useCallback(
+    (driverId: string) => {
+      if (!selectedRace || selectedPosition === null) return;
+      const nextOrder = placeDriverAtPredictionPosition(
+        prediction,
+        driverId,
+        selectedPosition,
+      );
+      onUpdatePrediction(selectedRace.id, session, nextOrder);
+      setSelectedPosition(null);
+    },
+    [prediction, selectedPosition, selectedRace, session, onUpdatePrediction],
+  );
+
   if (!selectedRace) return null;
 
   const classificationSize = getClassificationSize(races);
-  const prediction =
-    session === "sprint"
-      ? selectedRace.sprintPrediction
-      : selectedRace.prediction;
   const officialResult =
     session === "sprint"
       ? selectedRace.sprintResult
       : selectedRace.status === "completed"
         ? selectedRace.grandPrixResult
         : null;
-  const isEditable = isPredictionSessionEditable(selectedRace, session);
   const placedCount = prediction?.filter(Boolean).length ?? 0;
   const currentDriverId =
     selectedPosition === null ? undefined : prediction?.[selectedPosition];
-  const filteredDrivers = activeDrivers.filter((driver) =>
-    `${driver.firstName} ${driver.lastName} ${teamById.get(driver.teamId)?.name ?? ""}`
-      .toLocaleLowerCase()
-      .includes(driverSearch.trim().toLocaleLowerCase()),
-  );
 
   const selectRaceAtIndex = (index: number) => {
     const race = sortedRaces[index];
@@ -139,37 +170,24 @@ export default function MobilePredictionBoard({
     setDriverSearch("");
   };
 
-  const openDriverPicker = (positionIndex: number) => {
-    if (!isEditable) return;
-    setDriverSearch("");
-    setSelectedPosition(positionIndex);
-  };
-
-  const placeDriver = (driverId: string) => {
-    if (selectedPosition === null) return;
-    const nextOrder = placeDriverAtPredictionPosition(
-      prediction,
-      driverId,
-      selectedPosition,
-    );
-    onUpdatePrediction(selectedRace.id, session, nextOrder);
-    setSelectedPosition(null);
-  };
-
   const clearSelectedPosition = () => {
     if (selectedPosition === null) return;
     onClearPosition(selectedRace.id, session, selectedPosition);
     setSelectedPosition(null);
   };
 
+  const fillPercent = isEditable
+    ? Math.round((placedCount / classificationSize) * 100)
+    : 100;
+
   return (
-    <section className="overflow-hidden rounded-md border border-white/10 bg-neutral-950/75 shadow-2xl shadow-black/25">
+    <section className="surface-card overflow-hidden rounded-xl">
       <div className="flex items-center gap-2 border-b border-white/10 p-2">
         <button
           type="button"
           onClick={() => selectRaceAtIndex(selectedRaceIndex - 1)}
           disabled={selectedRaceIndex === 0}
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-md border border-white/10 bg-white/[0.03] text-xl text-neutral-200 disabled:opacity-30"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/[0.03] text-xl text-neutral-200 disabled:opacity-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
           aria-label="Previous race"
         >
           ‹
@@ -184,11 +202,12 @@ export default function MobilePredictionBoard({
               );
               selectRaceAtIndex(index);
             }}
-            className="h-11 w-full appearance-none rounded-md border border-white/10 bg-neutral-900 px-3 text-center text-sm font-black text-white"
+            className="h-11 w-full appearance-none rounded-lg border border-white/10 bg-neutral-900 px-3 text-center text-sm font-black text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
           >
             {sortedRaces.map((race) => (
               <option key={race.id} value={race.id}>
                 R{race.round} · {formatRaceName(race.name)}
+                {race.status === "completed" ? " ✓" : ""}
               </option>
             ))}
           </select>
@@ -197,7 +216,7 @@ export default function MobilePredictionBoard({
           type="button"
           onClick={() => selectRaceAtIndex(selectedRaceIndex + 1)}
           disabled={selectedRaceIndex === sortedRaces.length - 1}
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-md border border-white/10 bg-white/[0.03] text-xl text-neutral-200 disabled:opacity-30"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/[0.03] text-xl text-neutral-200 disabled:opacity-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
           aria-label="Next race"
         >
           ›
@@ -207,7 +226,7 @@ export default function MobilePredictionBoard({
       <div className="border-b border-white/10 px-3 py-2.5">
         <div className="flex items-center justify-between gap-3">
           {hasSprint ? (
-            <div className="grid grid-cols-2 rounded-md border border-white/10 bg-black/25 p-1">
+            <div className="grid grid-cols-2 rounded-lg border border-white/10 bg-black/25 p-1">
               <SessionButton
                 active={session === "grandPrix"}
                 label="Grand Prix"
@@ -224,15 +243,27 @@ export default function MobilePredictionBoard({
               Grand Prix
             </span>
           )}
-          <span className="text-xs font-bold tabular-nums text-neutral-500">
-            {isEditable ? `${placedCount} / ${classificationSize} placed` : "Official result"}
+          <span className="text-xs font-bold tabular-nums text-neutral-400">
+            {isEditable
+              ? `${placedCount} / ${classificationSize}`
+              : "Official"}
           </span>
+        </div>
+        <div className="progress-track mt-2.5" aria-hidden="true">
+          <div
+            className="progress-fill"
+            style={{ width: `${fillPercent}%` }}
+          />
         </div>
         {isEditable ? (
           <p className="mt-2 text-[11px] text-neutral-500">
             Tap a position, then choose a driver.
           </p>
-        ) : null}
+        ) : (
+          <p className="mt-2 text-[11px] text-emerald-400/80">
+            Official result · read only
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-2 p-2.5">
@@ -240,54 +271,21 @@ export default function MobilePredictionBoard({
           const officialEntry = officialResult?.find(
             (entry) => entry.position === positionIndex + 1,
           );
-          const driverId = officialEntry?.driverId ?? prediction?.[positionIndex];
+          const driverId =
+            officialEntry?.driverId ?? prediction?.[positionIndex];
           const driver = driverId ? driverById.get(driverId) : undefined;
           const teamId = officialEntry?.teamId ?? driver?.teamId;
           const team = teamId ? teamById.get(teamId) : undefined;
 
           return (
-            <button
+            <PositionButton
               key={positionIndex}
-              type="button"
-              onClick={() => openDriverPicker(positionIndex)}
-              disabled={!isEditable}
-              className={
-                driver
-                  ? "relative flex h-14 min-w-0 items-center gap-2 overflow-hidden rounded-md border border-white/10 bg-white/[0.05] px-2 text-left"
-                  : "flex h-14 min-w-0 items-center gap-2 rounded-md border border-dashed border-white/15 bg-black/20 px-2 text-left"
-              }
-              aria-label={
-                driver
-                  ? `Position ${positionIndex + 1}, ${driver.lastName}`
-                  : `Position ${positionIndex + 1}, empty`
-              }
-              aria-haspopup={isEditable ? "dialog" : undefined}
-            >
-              <span className="grid h-7 w-8 shrink-0 place-items-center rounded bg-white/[0.06] text-[11px] font-black tabular-nums text-neutral-300">
-                P{positionIndex + 1}
-              </span>
-              {driver ? (
-                <span className="min-w-0">
-                  <span className="block truncate text-xs font-black text-white">
-                    {driver.lastName}
-                  </span>
-                  <span className="mt-0.5 block truncate text-[10px] text-neutral-500">
-                    {team?.name ?? driver.teamId}
-                  </span>
-                </span>
-              ) : (
-                <span className="truncate text-xs font-semibold text-neutral-600">
-                  Select driver
-                </span>
-              )}
-              {driver ? (
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-y-2 right-1.5 w-0.5 rounded-full"
-                  style={{ backgroundColor: team?.color ?? "#737373" }}
-                />
-              ) : null}
-            </button>
+              positionIndex={positionIndex}
+              driver={driver}
+              team={team}
+              editable={isEditable}
+              onOpen={openDriverPicker}
+            />
           );
         })}
       </div>
@@ -348,49 +346,15 @@ export default function MobilePredictionBoard({
                   </button>
                 ) : null}
                 <div className="grid grid-cols-2 gap-2">
-                  {filteredDrivers.map((driver) => {
-                    const team = teamById.get(driver.teamId);
-                    const assignedPosition = prediction?.indexOf(driver.id) ?? -1;
-                    const isAssigned = assignedPosition >= 0;
-                    return (
-                      <button
-                        key={driver.id}
-                        type="button"
-                        onClick={() => placeDriver(driver.id)}
-                        aria-label={`${driver.firstName} ${driver.lastName}${
-                          isAssigned
-                            ? `, already placed at position ${assignedPosition + 1}`
-                            : ""
-                        }`}
-                        className={
-                          isAssigned
-                            ? "relative min-h-14 overflow-hidden rounded-md border border-emerald-400/50 bg-emerald-400/10 px-3 py-2 text-left ring-1 ring-inset ring-emerald-400/15"
-                            : "relative min-h-14 overflow-hidden rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-left"
-                        }
-                      >
-                        <span
-                          aria-hidden="true"
-                          className="absolute inset-y-2 left-1.5 w-0.5 rounded-full"
-                          style={{ backgroundColor: team?.color ?? "#737373" }}
-                        />
-                        {isAssigned ? (
-                          <span className="absolute right-2 top-2 rounded bg-emerald-400/15 px-1.5 py-0.5 text-[9px] font-black tabular-nums text-emerald-300 ring-1 ring-inset ring-emerald-400/30">
-                            ✓ P{assignedPosition + 1}
-                          </span>
-                        ) : null}
-                        <span
-                          className={`block truncate pl-1.5 text-xs font-black text-white ${
-                            isAssigned ? "pr-12" : ""
-                          }`}
-                        >
-                          {driver.lastName}
-                        </span>
-                        <span className="mt-0.5 block truncate pl-1.5 text-[10px] text-neutral-500">
-                          {team?.name ?? driver.teamId}
-                        </span>
-                      </button>
-                    );
-                  })}
+                  {filteredDrivers.map((driver) => (
+                    <PickerDriverButton
+                      key={driver.id}
+                      driver={driver}
+                      team={teamById.get(driver.teamId)}
+                      assignedPosition={prediction?.indexOf(driver.id) ?? -1}
+                      onSelect={placeDriver}
+                    />
+                  ))}
                 </div>
                 {filteredDrivers.length === 0 ? (
                   <p className="py-8 text-center text-sm text-neutral-500">
@@ -405,6 +369,120 @@ export default function MobilePredictionBoard({
     </section>
   );
 }
+
+type PositionButtonProps = {
+  positionIndex: number;
+  driver?: Driver;
+  team?: Team;
+  editable: boolean;
+  onOpen: (positionIndex: number) => void;
+};
+
+const PositionButton = memo(function PositionButton({
+  positionIndex,
+  driver,
+  team,
+  editable,
+  onOpen,
+}: PositionButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(positionIndex)}
+      disabled={!editable}
+      className={
+        driver
+          ? "relative flex h-14 min-w-0 items-center gap-2 overflow-hidden rounded-lg border border-white/10 bg-white/[0.05] px-2 text-left transition active:scale-[0.99] disabled:active:scale-100"
+          : "flex h-14 min-w-0 items-center gap-2 rounded-lg border border-dashed border-white/15 bg-black/25 px-2 text-left transition hover:border-white/25 hover:bg-white/[0.03] active:scale-[0.99] disabled:active:scale-100"
+      }
+      aria-label={
+        driver
+          ? `Position ${positionIndex + 1}, ${driver.lastName}`
+          : `Position ${positionIndex + 1}, empty`
+      }
+      aria-haspopup={editable ? "dialog" : undefined}
+    >
+      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-white/[0.06] text-[11px] font-black tabular-nums text-neutral-300">
+        {positionIndex + 1}
+      </span>
+      {driver ? (
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-xs font-black text-white">
+            {driver.lastName}
+          </span>
+          <span className="mt-0.5 block truncate text-[10px] text-neutral-500">
+            {driver.code}
+            {team ? ` · ${team.name}` : ""}
+          </span>
+        </span>
+      ) : (
+        <span className="truncate text-xs font-semibold text-neutral-600">
+          Tap to pick
+        </span>
+      )}
+      {driver ? (
+        <span
+          aria-hidden="true"
+          className="absolute inset-y-0 right-0 w-1 rounded-r-lg"
+          style={{ backgroundColor: team?.color ?? "#737373" }}
+        />
+      ) : null}
+    </button>
+  );
+});
+
+type PickerDriverButtonProps = {
+  driver: Driver;
+  team?: Team;
+  assignedPosition: number;
+  onSelect: (driverId: string) => void;
+};
+
+const PickerDriverButton = memo(function PickerDriverButton({
+  driver,
+  team,
+  assignedPosition,
+  onSelect,
+}: PickerDriverButtonProps) {
+  const isAssigned = assignedPosition >= 0;
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(driver.id)}
+      aria-label={`${driver.firstName} ${driver.lastName}${
+        isAssigned
+          ? `, already placed at position ${assignedPosition + 1}`
+          : ""
+      }`}
+      className={
+        isAssigned
+          ? "relative min-h-14 overflow-hidden rounded-md border border-emerald-400/50 bg-emerald-400/10 px-3 py-2 text-left ring-1 ring-inset ring-emerald-400/15"
+          : "relative min-h-14 overflow-hidden rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-left"
+      }
+    >
+      <span
+        aria-hidden="true"
+        className="absolute inset-y-2 left-1.5 w-0.5 rounded-full"
+        style={{ backgroundColor: team?.color ?? "#737373" }}
+      />
+      {isAssigned ? (
+        <span className="absolute right-2 top-2 rounded bg-emerald-400/15 px-1.5 py-0.5 text-[9px] font-black tabular-nums text-emerald-300 ring-1 ring-inset ring-emerald-400/30">
+          ✓ P{assignedPosition + 1}
+        </span>
+      ) : null}
+      <span
+        className={`block truncate pl-1.5 text-xs font-black text-white ${
+          isAssigned ? "pr-12" : ""
+        }`}
+      >
+        {driver.lastName}
+      </span>
+      <span className="mt-0.5 block truncate pl-1.5 text-[10px] text-neutral-500">
+        {team?.name ?? driver.teamId}
+      </span>
+    </button>
+  );
+});
 
 type SessionButtonProps = {
   active: boolean;

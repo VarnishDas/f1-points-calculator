@@ -6,11 +6,13 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "typecheck": "tsc -b",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
     "data:update": "tsx scripts/update-data.ts",
-    "data:update:dry": "tsx scripts/update-data.ts --dry-run"
+    "data:update:dry": "tsx scripts/update-data.ts --dry-run",
+    "data:validate": "tsx scripts/update-data.ts --validate"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -36,5 +38,9 @@
     "vite": "^8.1.1",
     "vitest": "^4.1.9",
     "zod": "^4.4.3"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
   }
 }

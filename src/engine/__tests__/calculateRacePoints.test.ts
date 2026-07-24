@@ -94,7 +94,7 @@ describe("calculateRacePoints", () => {
   it("awards 0 to every finisher outside the top 10", () => {
     const points = calculateRacePoints(fullResult);
     for (let i = 10; i < fullResult.length; i++) {
-      expect(points[fullResult[i]]).toBe(0);
+      expect(points[fullResult[i]!]).toBe(0);
     }
   });
 
@@ -120,7 +120,7 @@ describe("calculateRacePoints", () => {
       "sprint",
     );
 
-    expect(points.norris).toBe(8);
-    expect(points.piastri).toBe(0);
+    expect(points["norris"]).toBe(8);
+    expect(points["piastri"]).toBe(0);
   });
 });
