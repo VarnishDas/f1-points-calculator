@@ -16,6 +16,7 @@ import type { Team } from "../types/team";
 import { useCalculatorStore } from "../store/useCalculatorStore";
 import DriverPool from "./DriverPool";
 import { DriverTilePreview } from "./DriverTile";
+import EmptyState from "./EmptyState";
 import MobilePredictionBoard from "./MobilePredictionBoard";
 import PredictionBoard from "./PredictionBoard";
 import {
@@ -57,6 +58,7 @@ export default function PredictionWorkspace({
   );
   const activeDriver = activeDrag ? driverById.get(activeDrag.driverId) : undefined;
   const activeTeam = activeDriver ? teamById.get(activeDriver.teamId) : undefined;
+  const hasUpcomingRaces = races.some((race) => race.status === "upcoming");
 
   if (!isDesktop) {
     return (
@@ -64,14 +66,21 @@ export default function PredictionWorkspace({
         aria-label="Prediction workspace"
         className="flex min-w-0 flex-col gap-3"
       >
-        <MobilePredictionBoard
-          races={races}
-          drivers={drivers}
-          teams={teams}
-          activeDriverIds={activeDriverIds}
-          onUpdatePrediction={updatePrediction}
-          onClearPosition={clearPredictionPosition}
-        />
+        {hasUpcomingRaces ? (
+          <MobilePredictionBoard
+            races={races}
+            drivers={drivers}
+            teams={teams}
+            activeDriverIds={activeDriverIds}
+            onUpdatePrediction={updatePrediction}
+            onClearPosition={clearPredictionPosition}
+          />
+        ) : (
+          <EmptyState
+            title="Season complete"
+            description="Every race on the calendar is complete — there are no predictions left to make."
+          />
+        )}
       </section>
     );
   }
@@ -136,29 +145,36 @@ export default function PredictionWorkspace({
       aria-label="Prediction workspace"
       className="flex min-w-0 flex-col gap-3 lg:min-h-0 lg:overflow-hidden"
     >
-      <DndContext
-        sensors={sensors}
-        collisionDetection={pointerWithin}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        onDragCancel={() => setActiveDrag(null)}
-      >
-        <DriverPool
-          drivers={drivers}
-          teams={teams}
-          activeDriverIds={activeDriverIds}
+      {hasUpcomingRaces ? (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={pointerWithin}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragCancel={() => setActiveDrag(null)}
+        >
+          <DriverPool
+            drivers={drivers}
+            teams={teams}
+            activeDriverIds={activeDriverIds}
+          />
+          <PredictionBoard
+            races={races}
+            drivers={drivers}
+            teams={teams}
+          />
+          <DragOverlay dropAnimation={null}>
+            {activeDriver ? (
+              <DriverTilePreview driver={activeDriver} team={activeTeam} />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      ) : (
+        <EmptyState
+          title="Season complete"
+          description="Every race on the calendar is complete — there are no predictions left to make."
         />
-        <PredictionBoard
-          races={races}
-          drivers={drivers}
-          teams={teams}
-        />
-        <DragOverlay dropAnimation={null}>
-          {activeDriver ? (
-            <DriverTilePreview driver={activeDriver} team={activeTeam} />
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+      )}
     </section>
   );
 }

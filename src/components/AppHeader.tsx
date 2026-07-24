@@ -82,7 +82,7 @@ export default function AppHeader({ onReset }: AppHeaderProps) {
             type="button"
             onClick={() => setIsResetConfirmationOpen(true)}
             aria-label="Reset all predictions"
-            className="inline-flex h-10 w-10 items-center justify-center gap-1.5 rounded-md border border-white/10 bg-white/[0.03] text-xs font-semibold text-neutral-200 transition hover:border-white/20 hover:bg-white/[0.07] sm:h-8 sm:w-auto sm:px-3"
+            className="inline-flex h-10 w-10 items-center justify-center gap-1.5 rounded-md border border-white/10 bg-white/[0.03] text-xs font-semibold text-neutral-200 transition hover:border-white/20 hover:bg-white/[0.07] hover:text-white sm:h-8 sm:w-auto sm:px-3"
           >
             <span aria-hidden="true" className="text-base leading-none">
               ↺

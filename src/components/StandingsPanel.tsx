@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import type { Driver } from "../types/driver";
 import type { Team } from "../types/team";
 import type { DriverStanding, TeamStanding, WdcStatus } from "../types/standings";
+import EmptyState from "./EmptyState";
 
 type StandingsMode = "drivers" | "constructors";
 
@@ -73,6 +74,14 @@ export default function StandingsPanel({
 
       <div className="custom-scrollbar max-h-[22rem] overflow-x-auto overflow-y-auto lg:min-h-0 lg:max-h-none lg:flex-1 lg:stable-scrollbar-gutter">
         {mode === "drivers" ? (
+          driverStandings.length === 0 ? (
+            <div className="p-2.5">
+              <EmptyState
+                title="No driver standings"
+                description="Standings will appear once race results or predictions are available."
+              />
+            </div>
+          ) : (
           <table className="w-full border-collapse text-xs">
             <caption className="sr-only">Projected drivers championship standings</caption>
             <thead className="sticky top-0 z-10 bg-neutral-950">
@@ -129,6 +138,14 @@ export default function StandingsPanel({
               })}
             </tbody>
           </table>
+          )
+        ) : teamStandings.length === 0 ? (
+          <div className="p-2.5">
+            <EmptyState
+              title="No constructor standings"
+              description="Standings will appear once race results or predictions are available."
+            />
+          </div>
         ) : (
           <table className="w-full border-collapse text-xs">
             <caption className="sr-only">Projected constructors championship standings</caption>
