@@ -83,8 +83,8 @@ describe("calculateWdcStatus", () => {
 
     const status = calculateWdcStatus(races, drivers, testTeams);
 
-    expect(status.chaser).toBe("outOfContention");
-    expect(status.leader).toBe("champion");
+    expect(status["chaser"]).toBe("outOfContention");
+    expect(status["leader"]).toBe("champion");
   });
 
   it("keeps a driver in contention when their best case can win on countback", () => {
@@ -109,8 +109,8 @@ describe("calculateWdcStatus", () => {
 
     const status = calculateWdcStatus(races, drivers, testTeams);
 
-    expect(status.chaser).toBe("inContention");
-    expect(status.leader).toBe("inContention");
+    expect(status["chaser"]).toBe("inContention");
+    expect(status["leader"]).toBe("inContention");
   });
 
   it("marks the top driver as champion when all races are resolved", () => {
@@ -119,8 +119,8 @@ describe("calculateWdcStatus", () => {
 
     const status = calculateWdcStatus(races, drivers, testTeams);
 
-    expect(status.leader).toBe("champion");
-    expect(status.chaser).toBe("outOfContention");
+    expect(status["leader"]).toBe("champion");
+    expect(status["chaser"]).toBe("outOfContention");
   });
 
   it("does not mark a champion while another driver can still win", () => {
@@ -132,8 +132,8 @@ describe("calculateWdcStatus", () => {
 
     const status = calculateWdcStatus(races, drivers, testTeams);
 
-    expect(status.leader).toBe("inContention");
-    expect(status.chaser).toBe("inContention");
+    expect(status["leader"]).toBe("inContention");
+    expect(status["chaser"]).toBe("inContention");
   });
 
   it("treats empty slots in partial predictions as unresolved best-case results", () => {
@@ -147,8 +147,8 @@ describe("calculateWdcStatus", () => {
 
     const status = calculateWdcStatus(races, drivers, testTeams);
 
-    expect(status.leader).toBe("inContention");
-    expect(status.chaser).toBe("inContention");
+    expect(status["leader"]).toBe("inContention");
+    expect(status["chaser"]).toBe("inContention");
   });
 
   it("does not give a driver a filled position in a partial prediction", () => {
@@ -160,7 +160,7 @@ describe("calculateWdcStatus", () => {
 
     const status = calculateWdcStatus(races, drivers, testTeams);
 
-    expect(status.chaser).toBe("outOfContention");
+    expect(status["chaser"]).toBe("outOfContention");
   });
 
   it("keeps unresolved race-countback ties in contention instead of using fallback order", () => {
@@ -172,8 +172,8 @@ describe("calculateWdcStatus", () => {
 
     const status = calculateWdcStatus(races, drivers, testTeams);
 
-    expect(status.a).toBe("inContention");
-    expect(status.b).toBe("inContention");
+    expect(status["a"]).toBe("inContention");
+    expect(status["b"]).toBe("inContention");
   });
 
   describe("sprint predictions", () => {
@@ -210,8 +210,8 @@ describe("calculateWdcStatus", () => {
 
       const status = calculateWdcStatus(races, drivers, testTeams);
 
-      expect(status.leader).toBe("inContention");
-      expect(status.chaser).toBe("inContention");
+      expect(status["leader"]).toBe("inContention");
+      expect(status["chaser"]).toBe("inContention");
     });
 
     it("uses sprint P9 best-case as zero points", () => {
@@ -224,7 +224,7 @@ describe("calculateWdcStatus", () => {
 
       const status = calculateWdcStatus(races, drivers, testTeams);
 
-      expect(status.chaser).toBe("outOfContention");
+      expect(status["chaser"]).toBe("outOfContention");
     });
 
     it("keeps a driver in contention when an empty slot in either session could change the outcome", () => {
@@ -238,8 +238,8 @@ describe("calculateWdcStatus", () => {
       // Chaser already has sprint P1 (8 pts) and can still claim GP P1 (25 pts).
       // Leader has GP P1 (25 pts) and can still claim sprint P1 (8 pts).
       // Both best cases tie on countback, so neither is ruled out.
-      expect(status.chaser).toBe("inContention");
-      expect(status.leader).toBe("inContention");
+      expect(status["chaser"]).toBe("inContention");
+      expect(status["leader"]).toBe("inContention");
     });
 
     it("does not treat a completed Sprint as a remaining scoring opportunity", () => {
@@ -256,8 +256,8 @@ describe("calculateWdcStatus", () => {
 
       const status = calculateWdcStatus([race], drivers, testTeams);
 
-      expect(status.leader).toBe("champion");
-      expect(status.chaser).toBe("outOfContention");
+      expect(status["leader"]).toBe("champion");
+      expect(status["chaser"]).toBe("outOfContention");
     });
   });
 });

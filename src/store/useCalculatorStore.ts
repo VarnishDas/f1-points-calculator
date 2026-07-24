@@ -113,6 +113,16 @@ function trimEmptyTrailingPositions(prediction: string[]): void {
   }
 }
 
+function withSessionPrediction(
+  race: Race,
+  session: PredictionSessionType,
+  prediction: string[] | null,
+): Race {
+  return session === "grandPrix"
+    ? { ...race, prediction }
+    : { ...race, sprintPrediction: prediction };
+}
+
 export const useCalculatorStore = create<CalculatorState>()((set) => ({
   races: cloneRaces(initialRaces),
   drivers: initialDrivers,
@@ -123,7 +133,6 @@ export const useCalculatorStore = create<CalculatorState>()((set) => ({
     set((state) => {
       const race = state.races.find((r) => r.id === raceId);
       if (!race || !isPredictionSessionEditable(race, session)) return state;
-      const field = PREDICTION_FIELD[session];
       const normalized = normalizePrediction(
         orderedDriverIds,
         new Set(state.activeDriverIds),
@@ -131,9 +140,9 @@ export const useCalculatorStore = create<CalculatorState>()((set) => ({
       );
       return {
         races: state.races.map((r) =>
-          r.id === raceId ? { ...r, [field]: normalized } : r,
+          r.id === raceId ? withSessionPrediction(r, session, normalized) : r,
         ),
-      } as { races: Race[] };
+      };
     }),
 
   clearPredictionPosition: (raceId, session, positionIndex) =>
@@ -141,7 +150,7 @@ export const useCalculatorStore = create<CalculatorState>()((set) => ({
       const race = state.races.find((r) => r.id === raceId);
       if (!race || !isPredictionSessionEditable(race, session)) return state;
       const field = PREDICTION_FIELD[session];
-      const current = race[field] as string[] | null;
+      const current: string[] | null = race[field];
       if (!current || positionIndex < 0 || positionIndex >= getClassificationSize(state.races)) {
         return state;
       }
@@ -153,10 +162,10 @@ export const useCalculatorStore = create<CalculatorState>()((set) => ({
       return {
         races: state.races.map((r) =>
           r.id === raceId
-            ? { ...r, [field]: nextResult.length ? nextResult : null }
+            ? withSessionPrediction(r, session, nextResult.length ? nextResult : null)
             : r,
         ),
-      } as { races: Race[] };
+      };
     }),
 
   applyScenario: ({ predictions, sprintPredictions }) =>
