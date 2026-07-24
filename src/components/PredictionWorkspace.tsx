@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   DndContext,
   DragOverlay,
@@ -9,6 +16,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import { useShallow } from "zustand/react/shallow";
 
 import type { Driver } from "../types/driver";
 import type { Race } from "../types/race";
@@ -17,7 +25,6 @@ import { useCalculatorStore } from "../store/useCalculatorStore";
 import DriverPool from "./DriverPool";
 import { DriverTilePreview } from "./DriverTile";
 import EmptyState from "./EmptyState";
-import MobilePredictionBoard from "./MobilePredictionBoard";
 import PredictionBoard from "./PredictionBoard";
 import {
   createPredictionDragAnnouncements,
@@ -30,6 +37,15 @@ import {
   predictionScreenReaderInstructions,
   type PredictionDragData,
 } from "./predictionDnd";
+
+const MobilePredictionBoard = lazy(() => import("./MobilePredictionBoard"));
+
+const mobileBoardFallback = (
+  <div
+    aria-hidden="true"
+    className="h-72 animate-pulse rounded-md border border-white/10 bg-neutral-950/75"
+  />
+);
 
 type PredictionWorkspaceProps = {
   races: Race[];
@@ -44,9 +60,11 @@ export default function PredictionWorkspace({
   teams,
   activeDriverIds,
 }: PredictionWorkspaceProps) {
-  const updatePrediction = useCalculatorStore((state) => state.updatePrediction);
-  const clearPredictionPosition = useCalculatorStore(
-    (state) => state.clearPredictionPosition,
+  const { updatePrediction, clearPredictionPosition } = useCalculatorStore(
+    useShallow((state) => ({
+      updatePrediction: state.updatePrediction,
+      clearPredictionPosition: state.clearPredictionPosition,
+    })),
   );
   const isDesktop = useDesktopLayout();
   const [activeDrag, setActiveDrag] = useState<PredictionDragData | null>(null);
@@ -80,9 +98,73 @@ export default function PredictionWorkspace({
       }),
     [driverById, raceById],
   );
-  const activeDriver = activeDrag ? driverById.get(activeDrag.driverId) : undefined;
-  const activeTeam = activeDriver ? teamById.get(activeDriver.teamId) : undefined;
+  const activeDriver = activeDrag
+    ? driverById.get(activeDrag.driverId)
+    : undefined;
+  const activeTeam = activeDriver
+    ? teamById.get(activeDriver.teamId)
+    : undefined;
   const hasUpcomingRaces = races.some((race) => race.status === "upcoming");
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveDrag(getPredictionDragStartPayload(event));
+  }, []);
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      setActiveDrag(null);
+      const { active, over } = getPredictionDragPayload(event);
+      const removalSource = getPredictionRemovalSource(active, over);
+      if (removalSource) {
+        clearPredictionPosition(
+          removalSource.raceId,
+          removalSource.session,
+          removalSource.index,
+        );
+        return;
+      }
+
+      if (!active || !over) {
+        return;
+      }
+
+      if (!over.editable) return;
+
+      const targetRace = races.find((race) => race.id === over.raceId);
+      if (!targetRace || targetRace.status !== "upcoming") return;
+
+      if (
+        active.type === "prediction-driver" &&
+        active.raceId === targetRace.id &&
+        active.session === over.session &&
+        active.index === over.index
+      ) {
+        return;
+      }
+
+      const targetPrediction =
+        over.session === "sprint"
+          ? targetRace.sprintPrediction
+          : targetRace.prediction;
+      const moveSource = getPredictionMoveSource(active, over);
+      const nextOrder = placeDriverAtPredictionPosition(
+        targetPrediction,
+        active.driverId,
+        over.index,
+      );
+      updatePrediction(targetRace.id, over.session, nextOrder);
+      if (moveSource) {
+        clearPredictionPosition(
+          moveSource.raceId,
+          moveSource.session,
+          moveSource.index,
+        );
+      }
+    },
+    [races, updatePrediction, clearPredictionPosition],
+  );
+
+  const handleDragCancel = useCallback(() => setActiveDrag(null), []);
 
   if (!isDesktop) {
     return (
@@ -91,14 +173,16 @@ export default function PredictionWorkspace({
         className="flex min-w-0 flex-col gap-3"
       >
         {hasUpcomingRaces ? (
-          <MobilePredictionBoard
-            races={races}
-            drivers={drivers}
-            teams={teams}
-            activeDriverIds={activeDriverIds}
-            onUpdatePrediction={updatePrediction}
-            onClearPosition={clearPredictionPosition}
-          />
+          <Suspense fallback={mobileBoardFallback}>
+            <MobilePredictionBoard
+              races={races}
+              drivers={drivers}
+              teams={teams}
+              activeDriverIds={activeDriverIds}
+              onUpdatePrediction={updatePrediction}
+              onClearPosition={clearPredictionPosition}
+            />
+          </Suspense>
         ) : (
           <EmptyState
             title="Season complete"
@@ -108,61 +192,6 @@ export default function PredictionWorkspace({
       </section>
     );
   }
-
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveDrag(getPredictionDragStartPayload(event));
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    setActiveDrag(null);
-    const { active, over } = getPredictionDragPayload(event);
-    const removalSource = getPredictionRemovalSource(active, over);
-    if (removalSource) {
-      clearPredictionPosition(
-        removalSource.raceId,
-        removalSource.session,
-        removalSource.index,
-      );
-      return;
-    }
-
-    if (!active || !over) {
-      return;
-    }
-
-    if (!over.editable) return;
-
-    const targetRace = races.find((race) => race.id === over.raceId);
-    if (!targetRace || targetRace.status !== "upcoming") return;
-
-    if (
-      active.type === "prediction-driver" &&
-      active.raceId === targetRace.id &&
-      active.session === over.session &&
-      active.index === over.index
-    ) {
-      return;
-    }
-
-    const targetPrediction =
-      over.session === "sprint"
-        ? targetRace.sprintPrediction
-        : targetRace.prediction;
-    const moveSource = getPredictionMoveSource(active, over);
-    const nextOrder = placeDriverAtPredictionPosition(
-      targetPrediction,
-      active.driverId,
-      over.index,
-    );
-    updatePrediction(targetRace.id, over.session, nextOrder);
-    if (moveSource) {
-      clearPredictionPosition(
-        moveSource.raceId,
-        moveSource.session,
-        moveSource.index,
-      );
-    }
-  };
 
   return (
     <section
@@ -179,18 +208,14 @@ export default function PredictionWorkspace({
           }}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
-          onDragCancel={() => setActiveDrag(null)}
+          onDragCancel={handleDragCancel}
         >
           <DriverPool
             drivers={drivers}
             teams={teams}
             activeDriverIds={activeDriverIds}
           />
-          <PredictionBoard
-            races={races}
-            drivers={drivers}
-            teams={teams}
-          />
+          <PredictionBoard races={races} drivers={drivers} teams={teams} />
           <DragOverlay dropAnimation={null}>
             {activeDriver ? (
               <DriverTilePreview driver={activeDriver} team={activeTeam} />

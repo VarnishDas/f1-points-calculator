@@ -5,4 +5,14 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (/node_modules\/(react|react-dom)\//.test(id)) return 'vendor'
+          if (id.includes('node_modules/@dnd-kit/')) return 'dnd'
+        },
+      },
+    },
+  },
 })

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 
 import type { Driver } from "../types/driver";
@@ -19,7 +20,7 @@ type PredictionCellProps = {
   editable: boolean;
 };
 
-export default function PredictionCell({
+const PredictionCell = memo(function PredictionCell({
   raceId,
   raceName,
   session,
@@ -77,7 +78,9 @@ export default function PredictionCell({
       )}
     </div>
   );
-}
+});
+
+export default PredictionCell;
 
 type CellDriverProps = {
   raceId: string;
@@ -119,6 +122,9 @@ function DraggableCellDriver({
   );
 }
 
-function StaticCellDriver({ driver, team }: Pick<CellDriverProps, "driver" | "team">) {
+const StaticCellDriver = memo(function StaticCellDriver({
+  driver,
+  team,
+}: Pick<CellDriverProps, "driver" | "team">) {
   return <StaticDriverCellTile driver={driver} team={team} />;
-}
+});

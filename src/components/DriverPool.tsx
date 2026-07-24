@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 
 import type { Driver } from "../types/driver";
 import type { Team } from "../types/team";
@@ -11,7 +11,7 @@ type DriverPoolProps = {
   activeDriverIds: string[];
 };
 
-export default function DriverPool({
+const DriverPool = memo(function DriverPool({
   drivers,
   teams,
   activeDriverIds,
@@ -58,4 +58,6 @@ export default function DriverPool({
       )}
     </section>
   );
-}
+});
+
+export default DriverPool;

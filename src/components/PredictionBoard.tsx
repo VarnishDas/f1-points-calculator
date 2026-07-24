@@ -1,4 +1,4 @@
-import { Fragment, useLayoutEffect, useMemo, useRef } from "react";
+import { Fragment, memo, useLayoutEffect, useMemo, useRef } from "react";
 
 import type { Driver } from "../types/driver";
 import type { Race } from "../types/race";
@@ -17,7 +17,7 @@ type PredictionBoardProps = {
   teams: Team[];
 };
 
-export default function PredictionBoard({
+const PredictionBoard = memo(function PredictionBoard({
   races,
   drivers,
   teams,
@@ -158,7 +158,9 @@ export default function PredictionBoard({
       </div>
     </section>
   );
-}
+});
+
+export default PredictionBoard;
 
 type BoardRowProps = {
   positionIndex: number;
@@ -167,7 +169,12 @@ type BoardRowProps = {
   teamById: Map<string, Team>;
 };
 
-function BoardRow({ positionIndex, columns, driverById, teamById }: BoardRowProps) {
+const BoardRow = memo(function BoardRow({
+  positionIndex,
+  columns,
+  driverById,
+  teamById,
+}: BoardRowProps) {
   return (
     <>
       {columns.map(({ id, race, session, isEditable }) => {
@@ -202,7 +209,7 @@ function BoardRow({ positionIndex, columns, driverById, teamById }: BoardRowProp
       })}
     </>
   );
-}
+});
 
 function StatusLegend({ color, label }: { color: string; label: string }) {
   return (
