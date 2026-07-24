@@ -95,7 +95,10 @@ describe("aggregateChampionshipEntries", () => {
 
     expect(entries.drivers[0]).toMatchObject({ points: 25, positionCounts: [1] });
     // Position counts are sparse: holes mark positions the driver never took.
-    expect(entries.drivers[1]).toMatchObject({ points: 18, positionCounts: [, 1] });
+    expect(entries.drivers[1]).toMatchObject({
+      points: 18,
+      positionCounts: [undefined, 1],
+    });
     expect(entries.teams[0]).toMatchObject({ points: 43, positionCounts: [1, 1] });
   });
 
@@ -189,10 +192,10 @@ describe("aggregateChampionshipEntries", () => {
 
     const entries = aggregateChampionshipEntries(races, drivers, teams, "officialOnly");
 
-    expect(entries.drivers[0].points).toBe(19);
-    expect(entries.teams[0].points).toBe(19);
+    expect(entries.drivers[0]?.points).toBe(19);
+    expect(entries.teams[0]?.points).toBe(19);
     // Countback still records the finishing position even with overridden points.
-    expect(entries.drivers[0].positionCounts).toEqual([1]);
+    expect(entries.drivers[0]?.positionCounts).toEqual([1]);
   });
 
   it("honours explicit zero points on an official entry", () => {
@@ -246,7 +249,7 @@ describe("aggregateChampionshipEntries", () => {
 
     const entries = aggregateChampionshipEntries(races, drivers, teams, "officialOnly");
 
-    expect(entries.drivers[0].points).toBe(25);
+    expect(entries.drivers[0]?.points).toBe(25);
     expect(entries.teams.every((entry) => entry.points === 0)).toBe(true);
   });
 
@@ -269,7 +272,7 @@ describe("aggregateChampionshipEntries", () => {
     );
 
     // "ghost" occupies P1 but is discarded; "a" keeps its array-index position P2.
-    expect(entries.drivers[0]).toMatchObject({ points: 18, positionCounts: [, 1] });
+    expect(entries.drivers[0]).toMatchObject({ points: 18, positionCounts: [undefined, 1] });
   });
 
   it("skips empty slots in sparse predictions while keeping later positions", () => {
@@ -286,7 +289,7 @@ describe("aggregateChampionshipEntries", () => {
       "officialAndPredicted",
     );
 
-    expect(entries.drivers[0]).toMatchObject({ points: 15, positionCounts: [, , 1] });
+    expect(entries.drivers[0]).toMatchObject({ points: 15, positionCounts: [undefined, undefined, 1] });
   });
 
   it("accumulates team points across drivers, races, and sessions", () => {
@@ -320,7 +323,7 @@ describe("aggregateChampionshipEntries", () => {
     });
     expect(entries.teams.find((entry) => entry.teamId === "team-b")).toMatchObject({
       points: 22,
-      positionCounts: [, , 1],
+      positionCounts: [undefined, undefined, 1],
     });
   });
 });

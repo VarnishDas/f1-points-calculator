@@ -275,9 +275,9 @@ describe("calculateWdcStatus", () => {
 
       const status = calculateWdcStatus(races, drivers, testTeams);
 
-      expect(status.chaser).toBe("inContention");
-      expect(status.leader).toBe("inContention");
-      expect(status.f1).toBe("outOfContention");
+      expect(status["chaser"]).toBe("inContention");
+      expect(status["leader"]).toBe("inContention");
+      expect(status["f1"]).toBe("outOfContention");
     });
 
     it("clinches the championship when max remaining points equal the deficit but countback is lost", () => {
@@ -301,9 +301,9 @@ describe("calculateWdcStatus", () => {
 
       const status = calculateWdcStatus(races, drivers, testTeams);
 
-      expect(status.leader).toBe("champion");
-      expect(status.chaser).toBe("outOfContention");
-      expect(status.f1).toBe("outOfContention");
+      expect(status["leader"]).toBe("champion");
+      expect(status["chaser"]).toBe("outOfContention");
+      expect(status["f1"]).toBe("outOfContention");
     });
 
     it("keeps both drivers in contention while level on points with races remaining", () => {
@@ -333,8 +333,8 @@ describe("calculateWdcStatus", () => {
 
       const status = calculateWdcStatus(races, drivers, testTeams);
 
-      expect(status.a).toBe("inContention");
-      expect(status.b).toBe("inContention");
+      expect(status["a"]).toBe("inContention");
+      expect(status["b"]).toBe("inContention");
     });
 
     it("crowns the champion when the season is complete", () => {
@@ -343,8 +343,8 @@ describe("calculateWdcStatus", () => {
 
       const status = calculateWdcStatus(races, drivers, testTeams);
 
-      expect(status.a).toBe("champion");
-      expect(status.b).toBe("outOfContention");
+      expect(status["a"]).toBe("champion");
+      expect(status["b"]).toBe("outOfContention");
     });
 
     it("breaks a completed-season points tie on countback", () => {
@@ -373,8 +373,8 @@ describe("calculateWdcStatus", () => {
 
       const status = calculateWdcStatus(races, drivers, testTeams);
 
-      expect(status.a).toBe("champion");
-      expect(status.b).toBe("outOfContention");
+      expect(status["a"]).toBe("champion");
+      expect(status["b"]).toBe("outOfContention");
     });
 
     it("crowns the only driver when the field has a single entry", () => {
@@ -383,7 +383,7 @@ describe("calculateWdcStatus", () => {
 
       const status = calculateWdcStatus(races, drivers, testTeams);
 
-      expect(status.solo).toBe("champion");
+      expect(status["solo"]).toBe("champion");
     });
 
     it("keeps everyone in contention when there are no races", () => {
@@ -391,8 +391,8 @@ describe("calculateWdcStatus", () => {
 
       const status = calculateWdcStatus([], drivers, testTeams);
 
-      expect(status.a).toBe("inContention");
-      expect(status.b).toBe("inContention");
+      expect(status["a"]).toBe("inContention");
+      expect(status["b"]).toBe("inContention");
     });
 
     it("keeps everyone in contention at a fresh season start", () => {
@@ -404,8 +404,8 @@ describe("calculateWdcStatus", () => {
 
       const status = calculateWdcStatus(races, drivers, testTeams);
 
-      expect(status.a).toBe("inContention");
-      expect(status.b).toBe("inContention");
+      expect(status["a"]).toBe("inContention");
+      expect(status["b"]).toBe("inContention");
     });
   });
 });

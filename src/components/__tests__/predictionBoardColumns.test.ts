@@ -117,9 +117,9 @@ describe("buildBoardColumns", () => {
 
     expect(columns).toHaveLength(2);
     expect(columns[0]).toMatchObject({ id: "race-1:sprint", session: "sprint" });
-    expect(columns[0].race).toBe(race);
+    expect(columns[0]?.race).toBe(race);
     expect(columns[1]).toMatchObject({ id: "race-1:gp", session: "grandPrix" });
-    expect(columns[1].race).toBe(race);
+    expect(columns[1]?.race).toBe(race);
   });
 });
 

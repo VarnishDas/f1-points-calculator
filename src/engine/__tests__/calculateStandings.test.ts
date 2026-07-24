@@ -493,7 +493,7 @@ describe("calculateStandings (boundary conditions)", () => {
     const standings = calculateStandings(testRaces, boundaryDrivers(["a"]), testTeams);
 
     expect(standings.drivers[0]).toMatchObject({ points: 19, wins: 1 });
-    expect(standings.teams[0].points).toBe(19);
+    expect(standings.teams[0]?.points).toBe(19);
   });
 
   it("handles sparse official classifications with missing positions", () => {

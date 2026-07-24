@@ -617,8 +617,11 @@ describe("updatePrediction edge cases", () => {
   it("does not touch other races when updating one prediction", () => {
     const races = useCalculatorStore.getState().races;
     const upcoming = races.filter((r) => r.status === "upcoming");
-    if (upcoming.length < 2) throw new Error("expected at least two upcoming races");
-    const [target, sibling] = upcoming;
+    const target = upcoming[0];
+    const sibling = upcoming[1];
+    if (!target || !sibling) {
+      throw new Error("expected at least two upcoming races");
+    }
 
     useCalculatorStore
       .getState()

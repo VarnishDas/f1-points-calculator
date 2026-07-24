@@ -47,7 +47,10 @@ function shuffledDriverIds(rand: () => number): string[] {
   const ids = [...DRIVER_IDS];
   for (let index = ids.length - 1; index > 0; index--) {
     const swapWith = Math.floor(rand() * (index + 1));
-    [ids[index], ids[swapWith]] = [ids[swapWith], ids[index]];
+    const current = ids[index]!;
+    const other = ids[swapWith]!;
+    ids[index] = other;
+    ids[swapWith] = current;
   }
   return ids;
 }
@@ -60,12 +63,12 @@ function generatePrediction(rand: () => number, forceNonEmpty: boolean): string[
   let cursor = 0;
   for (let position = 0; position < DRIVER_IDS.length; position++) {
     if (rand() < 0.55) {
-      prediction[position] = ids[cursor++];
+      prediction[position] = ids[cursor++]!;
     }
   }
 
   if (prediction.length > 0) return prediction;
-  return forceNonEmpty ? [ids[0]] : null;
+  return forceNonEmpty ? [ids[0]!] : null;
 }
 
 /**

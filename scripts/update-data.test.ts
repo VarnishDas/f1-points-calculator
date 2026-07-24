@@ -613,6 +613,10 @@ describe("validateGeneratedData", () => {
   });
 });
 
+const sampleCalendarRace = source.calendar[0]!;
+const sampleDriver = source.drivers[0]!;
+const sampleConstructor = source.constructors[0]!;
+
 const validApiPayload = {
   MRData: {
     xmlns: "http://ergast.com/mrd/1.5",
@@ -623,10 +627,10 @@ const validApiPayload = {
       season: "2026",
       Races: [
         {
-          ...source.calendar[0],
+          ...sampleCalendarRace,
           url: "https://en.wikipedia.org/wiki/2026_Bahrain_Grand_Prix",
           Circuit: {
-            ...source.calendar[0].Circuit,
+            ...sampleCalendarRace.Circuit,
             Location: {
               lat: "26.0325",
               long: "50.5106",
@@ -642,11 +646,11 @@ const validApiPayload = {
               points: "25",
               status: "Finished",
               Driver: {
-                ...source.drivers[0],
+                ...sampleDriver,
                 url: "https://example.com/driver",
                 dateOfBirth: "1997-09-30",
               },
-              Constructor: { ...source.constructors[0], nationality: "Austrian" },
+              Constructor: { ...sampleConstructor, nationality: "Austrian" },
               Time: { millis: "5555555", time: "1:32:36.275" },
               FastestLap: { rank: "1", lap: "42" },
             },
@@ -681,17 +685,23 @@ describe("jolpicaResponseSchema", () => {
     const result = race?.Results?.[0];
     expect(result?.Driver.driverId).toBe("max_verstappen");
     expect("FastestLap" in (result ?? {})).toBe(false);
-    expect(mrData?.StandingsTable?.StandingsLists[0].DriverStandings).toHaveLength(1);
+    expect(
+      mrData?.StandingsTable?.StandingsLists[0]?.DriverStandings,
+    ).toHaveLength(1);
   });
 
   it("rejects payloads with wrongly typed or missing fields", () => {
     const badRound = structuredClone(validApiPayload);
-    Object.assign(badRound.MRData.RaceTable.Races[0], { round: 1 });
+    Object.assign(badRound.MRData.RaceTable.Races[0]!, { round: 1 });
     expect(jolpicaResponseSchema.safeParse(badRound).success).toBe(false);
 
     const noDriver = structuredClone(validApiPayload);
-    delete (noDriver.MRData.RaceTable.Races[0].Results as Array<Record<string, unknown>>)[0]
-      .Driver;
+    const noDriverResult = (
+      noDriver.MRData.RaceTable.Races[0]!.Results as Array<
+        Record<string, unknown>
+      >
+    )[0]!;
+    delete noDriverResult["Driver"];
     expect(jolpicaResponseSchema.safeParse(noDriver).success).toBe(false);
 
     const noCircuit = structuredClone(validApiPayload);
@@ -699,7 +709,7 @@ describe("jolpicaResponseSchema", () => {
     expect(jolpicaResponseSchema.safeParse(noCircuit).success).toBe(false);
 
     const emptyDriverId = structuredClone(validApiPayload);
-    emptyDriverId.MRData.DriverTable.Drivers[0].driverId = "";
+    emptyDriverId.MRData.DriverTable.Drivers[0]!.driverId = "";
     expect(jolpicaResponseSchema.safeParse(emptyDriverId).success).toBe(false);
   });
 });
@@ -712,7 +722,7 @@ describe("parseJolpicaResponse", () => {
 
   it("throws a human-readable error summarizing zod issues", () => {
     const badRound = structuredClone(validApiPayload);
-    Object.assign(badRound.MRData.RaceTable.Races[0], { round: 1 });
+    Object.assign(badRound.MRData.RaceTable.Races[0]!, { round: 1 });
 
     let message = "";
     try {

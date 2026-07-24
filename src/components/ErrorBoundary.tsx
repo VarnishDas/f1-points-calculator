@@ -13,13 +13,13 @@ export default class ErrorBoundary extends Component<
   ErrorBoundaryProps,
   ErrorBoundaryState
 > {
-  state: ErrorBoundaryState = { hasError: false };
+  override state: ErrorBoundaryState = { hasError: false };
 
   static getDerivedStateFromError(): ErrorBoundaryState {
     return { hasError: true };
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo) {
+  override componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("ErrorBoundary caught an unexpected error", error, info);
   }
 
@@ -27,7 +27,7 @@ export default class ErrorBoundary extends Component<
     window.location.reload();
   };
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       return (
         <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-neutral-950 px-6 text-center text-neutral-100">
