@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import type { Driver } from "../types/driver";
 import type { Team } from "../types/team";
 import DriverTile from "./DriverTile";
+import EmptyState from "./EmptyState";
 
 type DriverPoolProps = {
   drivers: Driver[];
@@ -37,15 +38,24 @@ export default function DriverPool({
           Drag a driver to a prediction position
         </p>
       </div>
-      <div className="custom-scrollbar grid grid-cols-[repeat(auto-fill,minmax(6.25rem,1fr))] gap-2 overflow-visible p-2.5 sm:gap-1.5 sm:p-2 lg:max-h-36 lg:overflow-auto xl:max-h-none xl:overflow-visible">
-        {activeDrivers.map((driver) => (
-          <DriverTile
-            key={driver.id}
-            driver={driver}
-            team={teamById.get(driver.teamId)}
+      {activeDrivers.length === 0 ? (
+        <div className="p-2.5 sm:p-2">
+          <EmptyState
+            title="Driver pool is empty"
+            description="There are no active drivers available to place right now."
           />
-        ))}
-      </div>
+        </div>
+      ) : (
+        <div className="custom-scrollbar grid grid-cols-[repeat(auto-fill,minmax(6.25rem,1fr))] gap-2 overflow-visible p-2.5 sm:gap-1.5 sm:p-2 lg:max-h-36 lg:overflow-auto xl:max-h-none xl:overflow-visible">
+          {activeDrivers.map((driver) => (
+            <DriverTile
+              key={driver.id}
+              driver={driver}
+              team={teamById.get(driver.teamId)}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

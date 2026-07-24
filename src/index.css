@@ -27,6 +27,51 @@ body,
   outline-offset: 2px;
 }
 
+@layer base {
+  a,
+  button {
+    transition-property:
+      color, background-color, border-color, text-decoration-color, box-shadow;
+    transition-duration: 150ms;
+    transition-timing-function: ease-in-out;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(115, 115, 115, 0.55) rgba(9, 10, 13, 0.9);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(9, 10, 13, 0.9);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(115, 115, 115, 0.45);
+  border: 2px solid rgba(9, 10, 13, 0.9);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(163, 163, 163, 0.6);
+}
+
 .driver-search-input:focus,
 .driver-search-input:focus-visible {
   border-color: rgba(255, 255, 255, 0.24);
