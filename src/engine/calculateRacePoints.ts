@@ -28,7 +28,7 @@ export function getPointsForSessionPosition(
   if (!Number.isInteger(position) || position < 1) return 0;
   const table = session === "sprint" ? SPRINT_POINTS_TABLE : POINTS_TABLE;
   if (position > table.length) return 0;
-  return table[position - 1];
+  return table[position - 1] ?? 0;
 }
 
 /**

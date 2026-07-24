@@ -18,11 +18,11 @@ type SourceConstructor = {
 
 type SourceDriver = {
   driverId: string;
-  permanentNumber?: string;
-  code?: string;
+  permanentNumber?: string | undefined;
+  code?: string | undefined;
   givenName: string;
   familyName: string;
-  nationality?: string;
+  nationality?: string | undefined;
 };
 
 type SourceResult = {
@@ -47,9 +47,18 @@ type SourceRace = {
   Circuit: {
     circuitName: string;
   };
-  Sprint?: unknown;
+  Sprint?: SourceSprintSession | undefined;
   Results?: SourceResult[];
   SprintResults?: SourceResult[];
+};
+
+/**
+ * Sprint weekend marker on a calendar entry. The app only checks for the
+ * presence of this object, so its fields stay informational.
+ */
+type SourceSprintSession = {
+  date?: string | undefined;
+  time?: string | undefined;
 };
 
 type JolpicaResponse = {

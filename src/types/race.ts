@@ -6,8 +6,8 @@ export interface EventResultEntry {
   position: number;
   driverId: string;
   teamId: string;
-  status?: string;
-  points?: number;
+  status?: string | undefined;
+  points?: number | undefined;
 }
 
 export interface Race {

@@ -414,7 +414,7 @@ describe("calculateStandings (event-specific official results)", () => {
 
     const standings = calculateStandings(testRaces, testDrivers, testTeams);
 
-    expect(standings.drivers[0].points).toBe(50);
+    expect(standings.drivers[0]?.points).toBe(50);
     expect(standings.teams.find((entry) => entry.teamId === "team-a")?.points).toBe(25);
     expect(standings.teams.find((entry) => entry.teamId === "team-b")?.points).toBe(25);
   });

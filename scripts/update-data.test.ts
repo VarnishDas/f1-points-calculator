@@ -199,7 +199,7 @@ describe("transformSourceData", () => {
       prediction: null,
       sprintPrediction: null,
     });
-    expect(generated.races[0].grandPrixResult).toEqual([
+    expect(generated.races[0]?.grandPrixResult).toEqual([
       {
         position: 1,
         driverId: "verstappen",
@@ -215,7 +215,7 @@ describe("transformSourceData", () => {
         points: 18,
       },
     ]);
-    expect(generated.races[0].sprintResult).toEqual([
+    expect(generated.races[0]?.sprintResult).toEqual([
       {
         position: 1,
         driverId: "reserve-driver",
@@ -321,8 +321,8 @@ describe("transformSourceData", () => {
       id: "replacement-driver",
       teamId: "new-team",
     });
-    expect(generated.races[0].grandPrixResult?.[0].teamId).toBe("old-team");
-    expect(generated.races[1].grandPrixResult?.[0].teamId).toBe("new-team");
+    expect(generated.races[0]?.grandPrixResult?.[0]?.teamId).toBe("old-team");
+    expect(generated.races[1]?.grandPrixResult?.[0]?.teamId).toBe("new-team");
     expect(generated.teams.map((team) => team.id)).toEqual(["new-team", "old-team"]);
   });
 
@@ -363,8 +363,8 @@ describe("transformSourceData", () => {
       "2026-07-05T00:00:00.000Z",
     );
 
-    expect(generated.races[0].id).toBe("australian-2026");
-    expect(generated.races[0].name).toBe("Australian Grand Prix");
+    expect(generated.races[0]?.id).toBe("australian-2026");
+    expect(generated.races[0]?.name).toBe("Australian Grand Prix");
   });
 
   it("preserves previous completed GP results when the source omits them", () => {
@@ -391,7 +391,7 @@ describe("transformSourceData", () => {
       "2026-07-05T00:00:00.000Z",
     );
 
-    expect(generated.races[0].grandPrixResult).toEqual([
+    expect(generated.races[0]?.grandPrixResult).toEqual([
       { position: 1, driverId: "verstappen", teamId: "red-bull" },
     ]);
     expect(generated.metadata.warnings[0]).toContain("Preserved previous round 1");
@@ -470,7 +470,7 @@ describe("transformSourceData", () => {
       "2026-07-05T00:00:00.000Z",
     );
 
-    expect(generated.races[0].sprintResult).toEqual(previousSprint);
+    expect(generated.races[0]?.sprintResult).toEqual(previousSprint);
     expect(generated.metadata.warnings).toContainEqual(
       expect.stringContaining("Preserved previous round 1 Sprint result"),
     );

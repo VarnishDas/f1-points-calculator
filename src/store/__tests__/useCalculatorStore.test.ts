@@ -551,8 +551,8 @@ describe("applyScenario", () => {
       });
 
       const updated = useCalculatorStore.getState().races[0];
-      expect(updated.sprintResult).toEqual(midWeekendRace.sprintResult);
-      expect(updated.sprintPrediction).toBeNull();
+      expect(updated?.sprintResult).toEqual(midWeekendRace.sprintResult);
+      expect(updated?.sprintPrediction).toBeNull();
     } finally {
       useCalculatorStore.setState({ races: originalRaces });
     }

@@ -35,8 +35,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isEntry(value: unknown): value is ScenarioPredictionEntry {
   if (!isRecord(value)) return false;
-  const position = value.p;
-  const driverId = value.d;
+  const position = value["p"];
+  const driverId = value["d"];
   return (
     typeof position === "number" &&
     Number.isInteger(position) &&
@@ -115,7 +115,7 @@ function validateSessionPredictions(
  */
 function validateScenario(data: unknown, context: DecodeContext): DecodedScenario | null {
   if (!isRecord(data)) return null;
-  const version = data.v;
+  const version = data["v"];
   if (version !== 1 && version !== SCENARIO_VERSION) return null;
 
   const validation = buildValidationContext(context);
@@ -124,13 +124,13 @@ function validateScenario(data: unknown, context: DecodeContext): DecodedScenari
   let sprintPredictions: ScenarioPredictions = {};
 
   if (version === 1) {
-    const normalized = validateSessionPredictions(data.predictions, validation, false);
+    const normalized = validateSessionPredictions(data["predictions"], validation, false);
     if (normalized) predictions = normalized;
   } else {
-    const gp = validateSessionPredictions(data.predictions, validation, false);
+    const gp = validateSessionPredictions(data["predictions"], validation, false);
     if (gp) predictions = gp;
 
-    const sprint = validateSessionPredictions(data.sprintPredictions, validation, true);
+    const sprint = validateSessionPredictions(data["sprintPredictions"], validation, true);
     if (sprint) sprintPredictions = sprint;
   }
 
