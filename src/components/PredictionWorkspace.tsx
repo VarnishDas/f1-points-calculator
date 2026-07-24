@@ -214,6 +214,7 @@ export default function PredictionWorkspace({
             drivers={drivers}
             teams={teams}
             activeDriverIds={activeDriverIds}
+            races={races}
           />
           <PredictionBoard races={races} drivers={drivers} teams={teams} />
           <DragOverlay dropAnimation={null}>

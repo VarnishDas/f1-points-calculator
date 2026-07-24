@@ -19,7 +19,7 @@ export default function Footer() {
   const dataAsOf = formatDataAsOf(metadata.generatedAt);
 
   return (
-    <footer className="shrink-0 border-t border-white/10 bg-neutral-950/75 px-3 py-3 text-center text-[11px] leading-relaxed text-neutral-500 lg:px-4 lg:py-2">
+    <footer className="shrink-0 border-t border-white/10 bg-neutral-950/50 px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-center text-[11px] leading-relaxed text-neutral-500 backdrop-blur-sm lg:px-4 lg:py-2 lg:pb-2">
       <p>
         © {currentYear}{" "}
         <a

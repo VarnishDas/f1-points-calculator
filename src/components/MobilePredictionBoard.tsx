@@ -176,14 +176,18 @@ export default function MobilePredictionBoard({
     setSelectedPosition(null);
   };
 
+  const fillPercent = isEditable
+    ? Math.round((placedCount / classificationSize) * 100)
+    : 100;
+
   return (
-    <section className="overflow-hidden rounded-md border border-white/10 bg-neutral-950/75 shadow-2xl shadow-black/25">
+    <section className="surface-card overflow-hidden rounded-xl">
       <div className="flex items-center gap-2 border-b border-white/10 p-2">
         <button
           type="button"
           onClick={() => selectRaceAtIndex(selectedRaceIndex - 1)}
           disabled={selectedRaceIndex === 0}
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-md border border-white/10 bg-white/[0.03] text-xl text-neutral-200 disabled:opacity-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/[0.03] text-xl text-neutral-200 disabled:opacity-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
           aria-label="Previous race"
         >
           ‹
@@ -198,11 +202,12 @@ export default function MobilePredictionBoard({
               );
               selectRaceAtIndex(index);
             }}
-            className="h-11 w-full appearance-none rounded-md border border-white/10 bg-neutral-900 px-3 text-center text-sm font-black text-white"
+            className="h-11 w-full appearance-none rounded-lg border border-white/10 bg-neutral-900 px-3 text-center text-sm font-black text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
           >
             {sortedRaces.map((race) => (
               <option key={race.id} value={race.id}>
                 R{race.round} · {formatRaceName(race.name)}
+                {race.status === "completed" ? " ✓" : ""}
               </option>
             ))}
           </select>
@@ -211,7 +216,7 @@ export default function MobilePredictionBoard({
           type="button"
           onClick={() => selectRaceAtIndex(selectedRaceIndex + 1)}
           disabled={selectedRaceIndex === sortedRaces.length - 1}
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-md border border-white/10 bg-white/[0.03] text-xl text-neutral-200 disabled:opacity-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/[0.03] text-xl text-neutral-200 disabled:opacity-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
           aria-label="Next race"
         >
           ›
@@ -221,7 +226,7 @@ export default function MobilePredictionBoard({
       <div className="border-b border-white/10 px-3 py-2.5">
         <div className="flex items-center justify-between gap-3">
           {hasSprint ? (
-            <div className="grid grid-cols-2 rounded-md border border-white/10 bg-black/25 p-1">
+            <div className="grid grid-cols-2 rounded-lg border border-white/10 bg-black/25 p-1">
               <SessionButton
                 active={session === "grandPrix"}
                 label="Grand Prix"
@@ -238,15 +243,27 @@ export default function MobilePredictionBoard({
               Grand Prix
             </span>
           )}
-          <span className="text-xs font-bold tabular-nums text-neutral-500">
-            {isEditable ? `${placedCount} / ${classificationSize} placed` : "Official result"}
+          <span className="text-xs font-bold tabular-nums text-neutral-400">
+            {isEditable
+              ? `${placedCount} / ${classificationSize}`
+              : "Official"}
           </span>
+        </div>
+        <div className="progress-track mt-2.5" aria-hidden="true">
+          <div
+            className="progress-fill"
+            style={{ width: `${fillPercent}%` }}
+          />
         </div>
         {isEditable ? (
           <p className="mt-2 text-[11px] text-neutral-500">
             Tap a position, then choose a driver.
           </p>
-        ) : null}
+        ) : (
+          <p className="mt-2 text-[11px] text-emerald-400/80">
+            Official result · read only
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-2 p-2.5">
@@ -254,7 +271,8 @@ export default function MobilePredictionBoard({
           const officialEntry = officialResult?.find(
             (entry) => entry.position === positionIndex + 1,
           );
-          const driverId = officialEntry?.driverId ?? prediction?.[positionIndex];
+          const driverId =
+            officialEntry?.driverId ?? prediction?.[positionIndex];
           const driver = driverId ? driverById.get(driverId) : undefined;
           const teamId = officialEntry?.teamId ?? driver?.teamId;
           const team = teamId ? teamById.get(teamId) : undefined;
@@ -374,8 +392,8 @@ const PositionButton = memo(function PositionButton({
       disabled={!editable}
       className={
         driver
-          ? "relative flex h-14 min-w-0 items-center gap-2 overflow-hidden rounded-md border border-white/10 bg-white/[0.05] px-2 text-left"
-          : "flex h-14 min-w-0 items-center gap-2 rounded-md border border-dashed border-white/15 bg-black/20 px-2 text-left"
+          ? "relative flex h-14 min-w-0 items-center gap-2 overflow-hidden rounded-lg border border-white/10 bg-white/[0.05] px-2 text-left transition active:scale-[0.99] disabled:active:scale-100"
+          : "flex h-14 min-w-0 items-center gap-2 rounded-lg border border-dashed border-white/15 bg-black/25 px-2 text-left transition hover:border-white/25 hover:bg-white/[0.03] active:scale-[0.99] disabled:active:scale-100"
       }
       aria-label={
         driver
@@ -384,27 +402,28 @@ const PositionButton = memo(function PositionButton({
       }
       aria-haspopup={editable ? "dialog" : undefined}
     >
-      <span className="grid h-7 w-8 shrink-0 place-items-center rounded bg-white/[0.06] text-[11px] font-black tabular-nums text-neutral-300">
-        P{positionIndex + 1}
+      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-white/[0.06] text-[11px] font-black tabular-nums text-neutral-300">
+        {positionIndex + 1}
       </span>
       {driver ? (
-        <span className="min-w-0">
+        <span className="min-w-0 flex-1">
           <span className="block truncate text-xs font-black text-white">
             {driver.lastName}
           </span>
           <span className="mt-0.5 block truncate text-[10px] text-neutral-500">
-            {team?.name ?? driver.teamId}
+            {driver.code}
+            {team ? ` · ${team.name}` : ""}
           </span>
         </span>
       ) : (
         <span className="truncate text-xs font-semibold text-neutral-600">
-          Select driver
+          Tap to pick
         </span>
       )}
       {driver ? (
         <span
           aria-hidden="true"
-          className="absolute inset-y-2 right-1.5 w-0.5 rounded-full"
+          className="absolute inset-y-0 right-0 w-1 rounded-r-lg"
           style={{ backgroundColor: team?.color ?? "#737373" }}
         />
       ) : null}

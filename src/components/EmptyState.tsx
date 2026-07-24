@@ -12,10 +12,10 @@ export default function EmptyState({
   icon,
 }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-white/10 bg-white/[0.02] px-4 py-8 text-center">
+    <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-4 py-8 text-center">
       <span
         aria-hidden="true"
-        className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/[0.03] text-neutral-500"
+        className="grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-neutral-500"
       >
         {icon ?? <DefaultFlagIcon />}
       </span>

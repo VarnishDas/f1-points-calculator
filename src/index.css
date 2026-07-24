@@ -2,28 +2,47 @@
 
 :root {
   color-scheme: dark;
+  --surface: rgba(10, 11, 15, 0.78);
+  --surface-raised: rgba(16, 17, 22, 0.92);
+  --surface-border: rgba(255, 255, 255, 0.1);
+  --accent-red: #dc2626;
+  --accent-amber: #f59e0b;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
 }
 
 html,
 body {
   margin: 0;
   background:
-    radial-gradient(circle at 50% -20%, rgba(220, 38, 38, 0.12), transparent 36rem),
+    radial-gradient(ellipse 80% 50% at 50% -15%, rgba(220, 38, 38, 0.16), transparent 55%),
+    radial-gradient(ellipse 45% 35% at 100% 20%, rgba(245, 158, 11, 0.05), transparent 50%),
+    radial-gradient(ellipse 40% 30% at 0% 80%, rgba(56, 189, 248, 0.04), transparent 45%),
     linear-gradient(180deg, #090a0d 0%, #050608 100%);
+  background-attachment: fixed;
   color: #f3f4f6;
-  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+  font-family:
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    Roboto,
+    "Helvetica Neue",
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 html,
 body,
 #root {
   min-height: 100%;
+  min-height: 100dvh;
 }
 
 :focus-visible {
-  outline: 2px solid #f59e0b;
+  outline: 2px solid var(--accent-amber);
   outline-offset: 2px;
 }
 
@@ -31,7 +50,8 @@ body,
   a,
   button {
     transition-property:
-      color, background-color, border-color, text-decoration-color, box-shadow;
+      color, background-color, border-color, text-decoration-color, box-shadow,
+      opacity, transform;
     transition-duration: 150ms;
     transition-timing-function: ease-in-out;
   }
@@ -74,8 +94,8 @@ html {
 
 .driver-search-input:focus,
 .driver-search-input:focus-visible {
-  border-color: rgba(255, 255, 255, 0.24);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+  border-color: rgba(245, 158, 11, 0.45);
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.2);
   outline: none;
 }
 
@@ -106,6 +126,47 @@ html {
 
 .stable-scrollbar-gutter {
   scrollbar-gutter: stable;
+}
+
+.surface-card {
+  border: 1px solid var(--surface-border);
+  background: var(--surface);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 18px 40px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(12px);
+}
+
+.surface-raised {
+  border: 1px solid var(--surface-border);
+  background: var(--surface-raised);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 12px 28px rgba(0, 0, 0, 0.32);
+}
+
+.progress-track {
+  height: 0.35rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #dc2626, #f59e0b);
+  transition: width 200ms ease;
+}
+
+.scroll-fade-x {
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 0.75rem,
+    #000 calc(100% - 0.75rem),
+    transparent 100%
+  );
 }
 
 .sr-only {

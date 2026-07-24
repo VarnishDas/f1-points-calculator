@@ -48,10 +48,10 @@ const PredictionCell = memo(function PredictionCell({
       ref={setNodeRef}
       className={
         isOver
-          ? "grid h-11 place-items-center rounded border border-amber-400/70 bg-amber-400/10 lg:h-8"
+          ? "grid h-11 place-items-center rounded-lg border border-amber-400/80 bg-amber-400/15 shadow-[inset_0_0_0_1px_rgba(245,158,11,0.25)] transition lg:h-8"
           : editable
-            ? "grid h-11 place-items-center rounded border border-dashed border-white/15 bg-black/20 lg:h-8"
-            : "grid h-11 place-items-center rounded border border-white/[0.06] bg-white/[0.025] lg:h-8"
+            ? "grid h-11 place-items-center rounded-lg border border-dashed border-white/15 bg-black/25 transition hover:border-white/30 hover:bg-white/[0.04] lg:h-8"
+            : "grid h-11 place-items-center rounded-lg border border-white/[0.06] bg-white/[0.025] lg:h-8"
       }
       aria-label={
         driver
@@ -74,7 +74,13 @@ const PredictionCell = memo(function PredictionCell({
           <StaticCellDriver driver={driver} team={team} />
         )
       ) : (
-        <span className="h-1.5 w-1.5 rounded-full bg-white/10" />
+        <span
+          className={
+            isOver
+              ? "h-1.5 w-1.5 rounded-full bg-amber-300"
+              : "h-1.5 w-1.5 rounded-full bg-white/10"
+          }
+        />
       )}
     </div>
   );

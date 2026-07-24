@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
+import { APP_SEASON } from "../config/season";
 import { useCalculatorStore } from "../store/useCalculatorStore";
 import {
   shareScenario,
@@ -9,9 +10,17 @@ import {
 
 type AppHeaderProps = {
   onReset: () => void;
+  leaderName?: string;
+  leaderPoints?: number;
+  leaderTeamColor?: string;
 };
 
-export default function AppHeader({ onReset }: AppHeaderProps) {
+export default function AppHeader({
+  onReset,
+  leaderName,
+  leaderPoints,
+  leaderTeamColor,
+}: AppHeaderProps) {
   const [shareStatus, setShareStatus] = useState<ShareStatus>("idle");
   const [shareMessage, setShareMessage] = useState("");
   const [isResetConfirmationOpen, setIsResetConfirmationOpen] = useState(false);
@@ -127,22 +136,55 @@ export default function AppHeader({ onReset }: AppHeaderProps) {
 
   return (
     <>
-      <header className="flex shrink-0 items-center justify-between gap-2 border-b border-white/10 px-3 py-2 lg:px-4">
+      <header className="flex shrink-0 items-center justify-between gap-2 border-b border-white/10 bg-neutral-950/60 px-3 py-2.5 backdrop-blur-md lg:px-4">
         <div className="min-w-0">
-          <h1 className="truncate text-sm font-black tracking-tight text-white sm:text-lg">
-            Formula 1 Points Calculator
-          </h1>
-          <p className="mt-0.5 hidden truncate text-xs text-neutral-500 sm:block">
+          <div className="flex min-w-0 items-center gap-2">
+            <h1 className="truncate text-sm font-black tracking-tight text-white sm:text-lg">
+              Formula 1 Points Calculator
+            </h1>
+            <span className="hidden shrink-0 rounded-full border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-red-300 sm:inline">
+              {APP_SEASON}
+            </span>
+          </div>
+          <p className="mt-0.5 hidden truncate text-xs text-neutral-500 md:block">
             Drag drivers to simulate the championship
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
+          {leaderName && leaderPoints !== undefined ? (
+            <div
+              className="hidden max-w-[11rem] items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] py-1 pl-1.5 pr-2.5 sm:flex"
+              title={`Projected leader: ${leaderName}, ${leaderPoints} points`}
+            >
+              <span
+                aria-hidden="true"
+                className="grid h-6 w-6 place-items-center rounded-full bg-amber-400/15 text-[9px] font-black text-amber-300 ring-1 ring-amber-400/30"
+              >
+                P1
+              </span>
+              <span className="min-w-0">
+                <span className="flex items-center gap-1.5">
+                  <span
+                    aria-hidden="true"
+                    className="h-2 w-0.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: leaderTeamColor ?? "#737373" }}
+                  />
+                  <span className="truncate text-[11px] font-black text-neutral-100">
+                    {leaderName}
+                  </span>
+                </span>
+                <span className="block pl-2 text-[10px] font-bold tabular-nums text-amber-400/90">
+                  {leaderPoints} pts
+                </span>
+              </span>
+            </div>
+          ) : null}
           <button
             type="button"
             onClick={() => setIsResetConfirmationOpen(true)}
             aria-label="Reset all predictions"
-            className="inline-flex h-10 w-10 items-center justify-center gap-1.5 rounded-md border border-white/10 bg-white/[0.03] text-xs font-semibold text-neutral-200 transition hover:border-white/20 hover:bg-white/[0.07] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 sm:h-8 sm:w-auto sm:px-3"
+            className="inline-flex h-10 w-10 items-center justify-center gap-1.5 rounded-md border border-white/10 bg-white/[0.03] text-xs font-semibold text-neutral-200 transition hover:border-white/20 hover:bg-white/[0.07] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 sm:h-9 sm:w-auto sm:px-3"
           >
             <span aria-hidden="true" className="text-base leading-none">
               ↺
@@ -152,7 +194,7 @@ export default function AppHeader({ onReset }: AppHeaderProps) {
           <button
             type="button"
             onClick={handleShare}
-            className="inline-flex h-10 w-10 items-center justify-center gap-1.5 rounded-md bg-red-600 text-xs font-bold text-white shadow-[0_0_22px_rgba(220,38,38,0.25)] transition hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 sm:h-8 sm:w-auto sm:px-3"
+            className="inline-flex h-10 w-10 items-center justify-center gap-1.5 rounded-md bg-red-600 text-xs font-bold text-white shadow-[0_0_22px_rgba(220,38,38,0.25)] transition hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 sm:h-9 sm:w-auto sm:px-3"
             aria-label={shareAriaLabel}
           >
             <span aria-hidden="true" className="text-base leading-none">
@@ -171,10 +213,10 @@ export default function AppHeader({ onReset }: AppHeaderProps) {
           role="status"
           className={
             toastTone === "success"
-              ? "fixed bottom-4 left-1/2 z-30 flex min-h-11 -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-emerald-400/25 bg-emerald-950/95 px-4 text-sm font-bold text-emerald-200 shadow-2xl shadow-black/50"
+              ? "fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-30 flex min-h-11 -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-emerald-400/25 bg-emerald-950/95 px-4 text-sm font-bold text-emerald-200 shadow-2xl shadow-black/50"
               : toastTone === "neutral"
-                ? "fixed bottom-4 left-1/2 z-30 flex min-h-11 -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-neutral-900/95 px-4 text-sm font-bold text-neutral-100 shadow-2xl shadow-black/50"
-                : "fixed bottom-4 left-1/2 z-30 flex min-h-11 -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-red-400/25 bg-red-950/95 px-4 text-sm font-bold text-red-200 shadow-2xl shadow-black/50"
+                ? "fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-30 flex min-h-11 -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-neutral-900/95 px-4 text-sm font-bold text-neutral-100 shadow-2xl shadow-black/50"
+                : "fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-30 flex min-h-11 -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-red-400/25 bg-red-950/95 px-4 text-sm font-bold text-red-200 shadow-2xl shadow-black/50"
           }
         >
           <span aria-hidden="true" className="text-base">
