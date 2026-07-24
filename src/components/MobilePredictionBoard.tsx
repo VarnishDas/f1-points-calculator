@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { Driver } from "../types/driver";
 import type { PredictionSessionType, Race } from "../types/race";
@@ -101,28 +101,59 @@ export default function MobilePredictionBoard({
     [teams],
   );
 
+  const prediction = selectedRace
+    ? session === "sprint"
+      ? selectedRace.sprintPrediction
+      : selectedRace.prediction
+    : null;
+  const isEditable = selectedRace
+    ? isPredictionSessionEditable(selectedRace, session)
+    : false;
+  const filteredDrivers = useMemo(
+    () =>
+      activeDrivers.filter((driver) =>
+        `${driver.firstName} ${driver.lastName} ${teamById.get(driver.teamId)?.name ?? ""}`
+          .toLocaleLowerCase()
+          .includes(driverSearch.trim().toLocaleLowerCase()),
+      ),
+    [activeDrivers, driverSearch, teamById],
+  );
+
+  const openDriverPicker = useCallback(
+    (positionIndex: number) => {
+      if (!isEditable) return;
+      setDriverSearch("");
+      setSelectedPosition(positionIndex);
+    },
+    [isEditable],
+  );
+
+  const placeDriver = useCallback(
+    (driverId: string) => {
+      if (!selectedRace || selectedPosition === null) return;
+      const nextOrder = placeDriverAtPredictionPosition(
+        prediction,
+        driverId,
+        selectedPosition,
+      );
+      onUpdatePrediction(selectedRace.id, session, nextOrder);
+      setSelectedPosition(null);
+    },
+    [prediction, selectedPosition, selectedRace, session, onUpdatePrediction],
+  );
+
   if (!selectedRace) return null;
 
   const classificationSize = getClassificationSize(races);
-  const prediction =
-    session === "sprint"
-      ? selectedRace.sprintPrediction
-      : selectedRace.prediction;
   const officialResult =
     session === "sprint"
       ? selectedRace.sprintResult
       : selectedRace.status === "completed"
         ? selectedRace.grandPrixResult
         : null;
-  const isEditable = isPredictionSessionEditable(selectedRace, session);
   const placedCount = prediction?.filter(Boolean).length ?? 0;
   const currentDriverId =
     selectedPosition === null ? undefined : prediction?.[selectedPosition];
-  const filteredDrivers = activeDrivers.filter((driver) =>
-    `${driver.firstName} ${driver.lastName} ${teamById.get(driver.teamId)?.name ?? ""}`
-      .toLocaleLowerCase()
-      .includes(driverSearch.trim().toLocaleLowerCase()),
-  );
 
   const selectRaceAtIndex = (index: number) => {
     const race = sortedRaces[index];
@@ -137,23 +168,6 @@ export default function MobilePredictionBoard({
     setSession(nextSession);
     setSelectedPosition(null);
     setDriverSearch("");
-  };
-
-  const openDriverPicker = (positionIndex: number) => {
-    if (!isEditable) return;
-    setDriverSearch("");
-    setSelectedPosition(positionIndex);
-  };
-
-  const placeDriver = (driverId: string) => {
-    if (selectedPosition === null) return;
-    const nextOrder = placeDriverAtPredictionPosition(
-      prediction,
-      driverId,
-      selectedPosition,
-    );
-    onUpdatePrediction(selectedRace.id, session, nextOrder);
-    setSelectedPosition(null);
   };
 
   const clearSelectedPosition = () => {
@@ -246,48 +260,14 @@ export default function MobilePredictionBoard({
           const team = teamId ? teamById.get(teamId) : undefined;
 
           return (
-            <button
+            <PositionButton
               key={positionIndex}
-              type="button"
-              onClick={() => openDriverPicker(positionIndex)}
-              disabled={!isEditable}
-              className={
-                driver
-                  ? "relative flex h-14 min-w-0 items-center gap-2 overflow-hidden rounded-md border border-white/10 bg-white/[0.05] px-2 text-left"
-                  : "flex h-14 min-w-0 items-center gap-2 rounded-md border border-dashed border-white/15 bg-black/20 px-2 text-left"
-              }
-              aria-label={
-                driver
-                  ? `Position ${positionIndex + 1}, ${driver.lastName}`
-                  : `Position ${positionIndex + 1}, empty`
-              }
-              aria-haspopup={isEditable ? "dialog" : undefined}
-            >
-              <span className="grid h-7 w-8 shrink-0 place-items-center rounded bg-white/[0.06] text-[11px] font-black tabular-nums text-neutral-300">
-                P{positionIndex + 1}
-              </span>
-              {driver ? (
-                <span className="min-w-0">
-                  <span className="block truncate text-xs font-black text-white">
-                    {driver.lastName}
-                  </span>
-                  <span className="mt-0.5 block truncate text-[10px] text-neutral-500">
-                    {team?.name ?? driver.teamId}
-                  </span>
-                </span>
-              ) : (
-                <span className="truncate text-xs font-semibold text-neutral-600">
-                  Select driver
-                </span>
-              )}
-              {driver ? (
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-y-2 right-1.5 w-0.5 rounded-full"
-                  style={{ backgroundColor: team?.color ?? "#737373" }}
-                />
-              ) : null}
-            </button>
+              positionIndex={positionIndex}
+              driver={driver}
+              team={team}
+              editable={isEditable}
+              onOpen={openDriverPicker}
+            />
           );
         })}
       </div>
@@ -348,49 +328,15 @@ export default function MobilePredictionBoard({
                   </button>
                 ) : null}
                 <div className="grid grid-cols-2 gap-2">
-                  {filteredDrivers.map((driver) => {
-                    const team = teamById.get(driver.teamId);
-                    const assignedPosition = prediction?.indexOf(driver.id) ?? -1;
-                    const isAssigned = assignedPosition >= 0;
-                    return (
-                      <button
-                        key={driver.id}
-                        type="button"
-                        onClick={() => placeDriver(driver.id)}
-                        aria-label={`${driver.firstName} ${driver.lastName}${
-                          isAssigned
-                            ? `, already placed at position ${assignedPosition + 1}`
-                            : ""
-                        }`}
-                        className={
-                          isAssigned
-                            ? "relative min-h-14 overflow-hidden rounded-md border border-emerald-400/50 bg-emerald-400/10 px-3 py-2 text-left ring-1 ring-inset ring-emerald-400/15"
-                            : "relative min-h-14 overflow-hidden rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-left"
-                        }
-                      >
-                        <span
-                          aria-hidden="true"
-                          className="absolute inset-y-2 left-1.5 w-0.5 rounded-full"
-                          style={{ backgroundColor: team?.color ?? "#737373" }}
-                        />
-                        {isAssigned ? (
-                          <span className="absolute right-2 top-2 rounded bg-emerald-400/15 px-1.5 py-0.5 text-[9px] font-black tabular-nums text-emerald-300 ring-1 ring-inset ring-emerald-400/30">
-                            ✓ P{assignedPosition + 1}
-                          </span>
-                        ) : null}
-                        <span
-                          className={`block truncate pl-1.5 text-xs font-black text-white ${
-                            isAssigned ? "pr-12" : ""
-                          }`}
-                        >
-                          {driver.lastName}
-                        </span>
-                        <span className="mt-0.5 block truncate pl-1.5 text-[10px] text-neutral-500">
-                          {team?.name ?? driver.teamId}
-                        </span>
-                      </button>
-                    );
-                  })}
+                  {filteredDrivers.map((driver) => (
+                    <PickerDriverButton
+                      key={driver.id}
+                      driver={driver}
+                      team={teamById.get(driver.teamId)}
+                      assignedPosition={prediction?.indexOf(driver.id) ?? -1}
+                      onSelect={placeDriver}
+                    />
+                  ))}
                 </div>
                 {filteredDrivers.length === 0 ? (
                   <p className="py-8 text-center text-sm text-neutral-500">
@@ -405,6 +351,119 @@ export default function MobilePredictionBoard({
     </section>
   );
 }
+
+type PositionButtonProps = {
+  positionIndex: number;
+  driver?: Driver;
+  team?: Team;
+  editable: boolean;
+  onOpen: (positionIndex: number) => void;
+};
+
+const PositionButton = memo(function PositionButton({
+  positionIndex,
+  driver,
+  team,
+  editable,
+  onOpen,
+}: PositionButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(positionIndex)}
+      disabled={!editable}
+      className={
+        driver
+          ? "relative flex h-14 min-w-0 items-center gap-2 overflow-hidden rounded-md border border-white/10 bg-white/[0.05] px-2 text-left"
+          : "flex h-14 min-w-0 items-center gap-2 rounded-md border border-dashed border-white/15 bg-black/20 px-2 text-left"
+      }
+      aria-label={
+        driver
+          ? `Position ${positionIndex + 1}, ${driver.lastName}`
+          : `Position ${positionIndex + 1}, empty`
+      }
+      aria-haspopup={editable ? "dialog" : undefined}
+    >
+      <span className="grid h-7 w-8 shrink-0 place-items-center rounded bg-white/[0.06] text-[11px] font-black tabular-nums text-neutral-300">
+        P{positionIndex + 1}
+      </span>
+      {driver ? (
+        <span className="min-w-0">
+          <span className="block truncate text-xs font-black text-white">
+            {driver.lastName}
+          </span>
+          <span className="mt-0.5 block truncate text-[10px] text-neutral-500">
+            {team?.name ?? driver.teamId}
+          </span>
+        </span>
+      ) : (
+        <span className="truncate text-xs font-semibold text-neutral-600">
+          Select driver
+        </span>
+      )}
+      {driver ? (
+        <span
+          aria-hidden="true"
+          className="absolute inset-y-2 right-1.5 w-0.5 rounded-full"
+          style={{ backgroundColor: team?.color ?? "#737373" }}
+        />
+      ) : null}
+    </button>
+  );
+});
+
+type PickerDriverButtonProps = {
+  driver: Driver;
+  team?: Team;
+  assignedPosition: number;
+  onSelect: (driverId: string) => void;
+};
+
+const PickerDriverButton = memo(function PickerDriverButton({
+  driver,
+  team,
+  assignedPosition,
+  onSelect,
+}: PickerDriverButtonProps) {
+  const isAssigned = assignedPosition >= 0;
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(driver.id)}
+      aria-label={`${driver.firstName} ${driver.lastName}${
+        isAssigned
+          ? `, already placed at position ${assignedPosition + 1}`
+          : ""
+      }`}
+      className={
+        isAssigned
+          ? "relative min-h-14 overflow-hidden rounded-md border border-emerald-400/50 bg-emerald-400/10 px-3 py-2 text-left ring-1 ring-inset ring-emerald-400/15"
+          : "relative min-h-14 overflow-hidden rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-left"
+      }
+    >
+      <span
+        aria-hidden="true"
+        className="absolute inset-y-2 left-1.5 w-0.5 rounded-full"
+        style={{ backgroundColor: team?.color ?? "#737373" }}
+      />
+      {isAssigned ? (
+        <span className="absolute right-2 top-2 rounded bg-emerald-400/15 px-1.5 py-0.5 text-[9px] font-black tabular-nums text-emerald-300 ring-1 ring-inset ring-emerald-400/30">
+          ✓ P{assignedPosition + 1}
+        </span>
+      ) : null}
+      <span
+        className={`block truncate pl-1.5 text-xs font-black text-white ${
+          isAssigned ? "pr-12" : ""
+        }`}
+      >
+        {driver.lastName}
+      </span>
+      <span className="mt-0.5 block truncate pl-1.5 text-[10px] text-neutral-500">
+        {team?.name ?? driver.teamId}
+      </span>
+    </button>
+  );
+});
 
 type SessionButtonProps = {
   active: boolean;

@@ -1,4 +1,4 @@
-import { forwardRef } from "react";
+import { forwardRef, memo } from "react";
 import type { ComponentPropsWithoutRef, CSSProperties, Ref } from "react";
 import { useDraggable } from "@dnd-kit/core";
 
@@ -12,7 +12,7 @@ type DriverTileProps = {
 
 type DriverTileVariant = "pool" | "cell" | "overlay";
 
-export default function DriverTile({ driver, team }: DriverTileProps) {
+const DriverTile = memo(function DriverTile({ driver, team }: DriverTileProps) {
   const { attributes, listeners, setNodeRef, isDragging } =
     useDraggable({
       id: `pool:${driver.id}`,
@@ -34,7 +34,9 @@ export default function DriverTile({ driver, team }: DriverTileProps) {
       tabIndex={-1}
     />
   );
-}
+});
+
+export default DriverTile;
 
 type DriverTileSurfaceProps = {
   driver: Driver;
@@ -43,9 +45,12 @@ type DriverTileSurfaceProps = {
   isDragging?: boolean;
 };
 
-export function DriverTilePreview({ driver, team }: DriverTileProps) {
+export const DriverTilePreview = memo(function DriverTilePreview({
+  driver,
+  team,
+}: DriverTileProps) {
   return <DriverTileSurface driver={driver} team={team} variant="overlay" />;
-}
+});
 
 export const DriverCellTile = forwardRef<
   HTMLButtonElement,
@@ -55,12 +60,12 @@ export const DriverCellTile = forwardRef<
   return <DriverTileSurface ref={ref} variant="cell" {...props} />;
 });
 
-export function StaticDriverCellTile({
+export const StaticDriverCellTile = memo(function StaticDriverCellTile({
   driver,
   team,
 }: Pick<DriverTileProps, "driver" | "team">) {
   return <DriverTileSurface driver={driver} team={team} variant="cell" asStatic />;
-}
+});
 
 type DriverTileButtonProps = DriverTileSurfaceProps & {
   asStatic?: boolean;
@@ -104,7 +109,7 @@ const DriverTileSurface = forwardRef<
   );
 });
 
-function TileContent({
+const TileContent = memo(function TileContent({
   driver,
   team,
   variant,
@@ -140,7 +145,7 @@ function TileContent({
       </span>
     </>
   );
-}
+});
 
 function getTileClasses(variant: DriverTileVariant) {
   if (variant === "pool") {

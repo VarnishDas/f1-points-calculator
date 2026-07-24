@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useShallow } from "zustand/react/shallow";
 
 import { useCalculatorStore } from "./store/useCalculatorStore";
 import { calculateProjectedStandings } from "./engine/calculateProjectedStandings";
@@ -13,11 +14,16 @@ import StandingsPanel from "./components/StandingsPanel";
 function App() {
   useShareableUrl();
 
-  const races = useCalculatorStore((s) => s.races);
-  const drivers = useCalculatorStore((s) => s.drivers);
-  const teams = useCalculatorStore((s) => s.teams);
-  const activeDriverIds = useCalculatorStore((s) => s.activeDriverIds);
-  const resetPredictions = useCalculatorStore((s) => s.resetPredictions);
+  const { races, drivers, teams, activeDriverIds, resetPredictions } =
+    useCalculatorStore(
+      useShallow((s) => ({
+        races: s.races,
+        drivers: s.drivers,
+        teams: s.teams,
+        activeDriverIds: s.activeDriverIds,
+        resetPredictions: s.resetPredictions,
+      })),
+    );
 
   const projected = useMemo(
     () => calculateProjectedStandings(races, drivers, teams),

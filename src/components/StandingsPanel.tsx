@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 
 import type { Driver } from "../types/driver";
 import type { Team } from "../types/team";
@@ -14,7 +14,7 @@ type StandingsPanelProps = {
   wdcStatusByDriverId: Record<string, WdcStatus>;
 };
 
-export default function StandingsPanel({
+const StandingsPanel = memo(function StandingsPanel({
   driverStandings,
   teamStandings,
   drivers,
@@ -90,41 +90,13 @@ export default function StandingsPanel({
                 const wdcStatus = wdcStatusByDriverId[standing.driverId];
 
                 return (
-                  <tr
+                  <DriverStandingRow
                     key={standing.driverId}
-                    className="border-b border-white/[0.06] last:border-b-0"
-                  >
-                    <td className="sticky left-0 z-10 bg-neutral-950 px-2 py-2 tabular-nums text-neutral-400 sm:px-4">
-                      {standing.position}
-                    </td>
-                    <td className="min-w-0 px-1 py-2">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <span
-                          aria-hidden="true"
-                          className="h-4 w-1 shrink-0 rounded-full"
-                          style={{ backgroundColor: team?.color ?? "#737373" }}
-                        />
-                        <span className="min-w-0 flex-1 truncate font-black text-neutral-100">
-                          {driver?.lastName ?? standing.driverId}
-                        </span>
-                        {wdcStatus === "champion" ? (
-                          <span className="shrink-0 rounded border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-amber-300">
-                            WDC
-                          </span>
-                        ) : wdcStatus === "outOfContention" ? (
-                          <span className="shrink-0 rounded border border-white/10 bg-white/[0.03] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-neutral-500">
-                            Out
-                          </span>
-                        ) : null}
-                      </div>
-                    </td>
-                    <td className="px-1 py-2 text-right tabular-nums text-neutral-500">
-                      {standing.wins}
-                    </td>
-                    <td className="px-2 py-2 text-right font-black tabular-nums text-amber-400 sm:px-4">
-                      {standing.points}
-                    </td>
-                  </tr>
+                    standing={standing}
+                    driver={driver}
+                    team={team}
+                    wdcStatus={wdcStatus}
+                  />
                 );
               })}
             </tbody>
@@ -140,39 +112,101 @@ export default function StandingsPanel({
               </tr>
             </thead>
             <tbody>
-              {teamStandings.map((standing) => {
-                const team = teamById.get(standing.teamId);
-
-                return (
-                  <tr
-                    key={standing.teamId}
-                    className="border-b border-white/[0.06] last:border-b-0"
-                  >
-                    <td className="sticky left-0 z-10 bg-neutral-950 px-2 py-2 tabular-nums text-neutral-400 sm:px-4">
-                      {standing.position}
-                    </td>
-                    <td className="min-w-0 px-1 py-2">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <span
-                          aria-hidden="true"
-                          className="h-4 w-1 shrink-0 rounded-full"
-                          style={{ backgroundColor: team?.color ?? "#737373" }}
-                        />
-                        <span className="truncate font-semibold text-neutral-100">
-                          {team?.name ?? standing.teamId}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-2 py-2 text-right font-black tabular-nums text-amber-400 sm:px-4">
-                      {standing.points}
-                    </td>
-                  </tr>
-                );
-              })}
+              {teamStandings.map((standing) => (
+                <TeamStandingRow
+                  key={standing.teamId}
+                  standing={standing}
+                  team={teamById.get(standing.teamId)}
+                />
+              ))}
             </tbody>
           </table>
         )}
       </div>
     </aside>
   );
-}
+});
+
+export default StandingsPanel;
+
+type DriverStandingRowProps = {
+  standing: DriverStanding;
+  driver?: Driver;
+  team?: Team;
+  wdcStatus?: WdcStatus;
+};
+
+const DriverStandingRow = memo(function DriverStandingRow({
+  standing,
+  driver,
+  team,
+  wdcStatus,
+}: DriverStandingRowProps) {
+  return (
+    <tr className="border-b border-white/[0.06] last:border-b-0">
+      <td className="sticky left-0 z-10 bg-neutral-950 px-2 py-2 tabular-nums text-neutral-400 sm:px-4">
+        {standing.position}
+      </td>
+      <td className="min-w-0 px-1 py-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <span
+            aria-hidden="true"
+            className="h-4 w-1 shrink-0 rounded-full"
+            style={{ backgroundColor: team?.color ?? "#737373" }}
+          />
+          <span className="min-w-0 flex-1 truncate font-black text-neutral-100">
+            {driver?.lastName ?? standing.driverId}
+          </span>
+          {wdcStatus === "champion" ? (
+            <span className="shrink-0 rounded border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-amber-300">
+              WDC
+            </span>
+          ) : wdcStatus === "outOfContention" ? (
+            <span className="shrink-0 rounded border border-white/10 bg-white/[0.03] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-neutral-500">
+              Out
+            </span>
+          ) : null}
+        </div>
+      </td>
+      <td className="px-1 py-2 text-right tabular-nums text-neutral-500">
+        {standing.wins}
+      </td>
+      <td className="px-2 py-2 text-right font-black tabular-nums text-amber-400 sm:px-4">
+        {standing.points}
+      </td>
+    </tr>
+  );
+});
+
+type TeamStandingRowProps = {
+  standing: TeamStanding;
+  team?: Team;
+};
+
+const TeamStandingRow = memo(function TeamStandingRow({
+  standing,
+  team,
+}: TeamStandingRowProps) {
+  return (
+    <tr className="border-b border-white/[0.06] last:border-b-0">
+      <td className="sticky left-0 z-10 bg-neutral-950 px-2 py-2 tabular-nums text-neutral-400 sm:px-4">
+        {standing.position}
+      </td>
+      <td className="min-w-0 px-1 py-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <span
+            aria-hidden="true"
+            className="h-4 w-1 shrink-0 rounded-full"
+            style={{ backgroundColor: team?.color ?? "#737373" }}
+          />
+          <span className="truncate font-semibold text-neutral-100">
+            {team?.name ?? standing.teamId}
+          </span>
+        </div>
+      </td>
+      <td className="px-2 py-2 text-right font-black tabular-nums text-amber-400 sm:px-4">
+        {standing.points}
+      </td>
+    </tr>
+  );
+});
