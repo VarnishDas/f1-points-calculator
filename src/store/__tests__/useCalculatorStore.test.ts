@@ -558,3 +558,262 @@ describe("applyScenario", () => {
     }
   });
 });
+
+describe("updatePrediction edge cases", () => {
+  beforeEach(() => {
+    useCalculatorStore.getState().resetPredictions();
+  });
+
+  it("stores null when given an empty driver order", () => {
+    const upcoming = useCalculatorStore
+      .getState()
+      .races.find((r) => r.status === "upcoming");
+    if (!upcoming) throw new Error("expected at least one upcoming race");
+
+    useCalculatorStore.getState().updatePrediction(upcoming.id, "grandPrix", []);
+
+    const updated = useCalculatorStore
+      .getState()
+      .races.find((r) => r.id === upcoming.id);
+    expect(updated?.prediction).toBeNull();
+  });
+
+  it("ignores slots beyond the classification size", () => {
+    const upcoming = useCalculatorStore
+      .getState()
+      .races.find((r) => r.status === "upcoming");
+    if (!upcoming) throw new Error("expected at least one upcoming race");
+
+    const prediction: string[] = [];
+    prediction[RACE_CLASSIFICATION_SIZE] = "norris";
+    useCalculatorStore.getState().updatePrediction(upcoming.id, "grandPrix", prediction);
+
+    const updated = useCalculatorStore
+      .getState()
+      .races.find((r) => r.id === upcoming.id);
+    expect(updated?.prediction).toBeNull();
+  });
+
+  it("keeps the other session prediction intact on a sprint weekend", () => {
+    const upcomingSprint = useCalculatorStore
+      .getState()
+      .races.find((r) => r.status === "upcoming" && r.hasSprint);
+    if (!upcomingSprint) throw new Error("expected an upcoming sprint race");
+
+    useCalculatorStore
+      .getState()
+      .updatePrediction(upcomingSprint.id, "grandPrix", ["norris"]);
+    useCalculatorStore
+      .getState()
+      .updatePrediction(upcomingSprint.id, "sprint", ["piastri"]);
+
+    const updated = useCalculatorStore
+      .getState()
+      .races.find((r) => r.id === upcomingSprint.id);
+    expect(updated?.prediction).toEqual(["norris"]);
+    expect(updated?.sprintPrediction).toEqual(["piastri"]);
+  });
+
+  it("does not touch other races when updating one prediction", () => {
+    const races = useCalculatorStore.getState().races;
+    const upcoming = races.filter((r) => r.status === "upcoming");
+    if (upcoming.length < 2) throw new Error("expected at least two upcoming races");
+    const [target, sibling] = upcoming;
+
+    useCalculatorStore
+      .getState()
+      .updatePrediction(target.id, "grandPrix", ["norris"]);
+
+    const updatedSibling = useCalculatorStore
+      .getState()
+      .races.find((r) => r.id === sibling.id);
+    expect(updatedSibling).toBe(sibling);
+  });
+});
+
+describe("clearPredictionPosition edge cases", () => {
+  beforeEach(() => {
+    useCalculatorStore.getState().resetPredictions();
+  });
+
+  it("ignores out-of-range position indexes", () => {
+    const upcoming = useCalculatorStore
+      .getState()
+      .races.find((r) => r.status === "upcoming");
+    if (!upcoming) throw new Error("expected at least one upcoming race");
+
+    useCalculatorStore
+      .getState()
+      .updatePrediction(upcoming.id, "grandPrix", ["norris", "piastri"]);
+
+    const before = useCalculatorStore.getState();
+    useCalculatorStore.getState().clearPredictionPosition(upcoming.id, "grandPrix", -1);
+    expect(useCalculatorStore.getState()).toBe(before);
+
+    useCalculatorStore
+      .getState()
+      .clearPredictionPosition(upcoming.id, "grandPrix", RACE_CLASSIFICATION_SIZE);
+    expect(useCalculatorStore.getState()).toBe(before);
+  });
+
+  it("leaves state unchanged when the race has no prediction", () => {
+    const upcoming = useCalculatorStore
+      .getState()
+      .races.find((r) => r.status === "upcoming");
+    if (!upcoming) throw new Error("expected at least one upcoming race");
+
+    const before = useCalculatorStore.getState();
+    useCalculatorStore.getState().clearPredictionPosition(upcoming.id, "grandPrix", 0);
+
+    expect(useCalculatorStore.getState()).toBe(before);
+  });
+
+  it("leaves state unchanged for an unknown race id", () => {
+    const before = useCalculatorStore.getState();
+    useCalculatorStore.getState().clearPredictionPosition("does-not-exist", "grandPrix", 0);
+
+    expect(useCalculatorStore.getState()).toBe(before);
+  });
+
+  it("trims the prediction when the trailing slot is cleared", () => {
+    const upcoming = useCalculatorStore
+      .getState()
+      .races.find((r) => r.status === "upcoming");
+    if (!upcoming) throw new Error("expected at least one upcoming race");
+
+    useCalculatorStore
+      .getState()
+      .updatePrediction(upcoming.id, "grandPrix", ["norris", "piastri"]);
+    useCalculatorStore.getState().clearPredictionPosition(upcoming.id, "grandPrix", 1);
+
+    const updated = useCalculatorStore
+      .getState()
+      .races.find((r) => r.id === upcoming.id);
+    expect(updated?.prediction).toEqual(["norris"]);
+  });
+});
+
+describe("applyScenario edge cases", () => {
+  beforeEach(() => {
+    useCalculatorStore.getState().resetPredictions();
+  });
+
+  it("drops entries beyond the classification size", () => {
+    const upcoming = useCalculatorStore
+      .getState()
+      .races.find((r) => r.status === "upcoming");
+    if (!upcoming) throw new Error("expected at least one upcoming race");
+
+    useCalculatorStore.getState().applyScenario({
+      predictions: {
+        [upcoming.id]: [{ p: RACE_CLASSIFICATION_SIZE + 1, d: "norris" }],
+      },
+      sprintPredictions: {},
+    });
+
+    const updated = useCalculatorStore
+      .getState()
+      .races.find((r) => r.id === upcoming.id);
+    expect(updated?.prediction).toBeNull();
+  });
+
+  it("keeps the first entry for a duplicated position", () => {
+    const upcoming = useCalculatorStore
+      .getState()
+      .races.find((r) => r.status === "upcoming");
+    if (!upcoming) throw new Error("expected at least one upcoming race");
+
+    useCalculatorStore.getState().applyScenario({
+      predictions: {
+        [upcoming.id]: [
+          { p: 1, d: "norris" },
+          { p: 1, d: "piastri" },
+        ],
+      },
+      sprintPredictions: {},
+    });
+
+    const updated = useCalculatorStore
+      .getState()
+      .races.find((r) => r.id === upcoming.id);
+    expect(updated?.prediction).toEqual(["norris"]);
+  });
+
+  it("drops non-integer positions", () => {
+    const upcoming = useCalculatorStore
+      .getState()
+      .races.find((r) => r.status === "upcoming");
+    if (!upcoming) throw new Error("expected at least one upcoming race");
+
+    useCalculatorStore.getState().applyScenario({
+      predictions: {
+        [upcoming.id]: [
+          { p: 1.5, d: "norris" },
+          { p: 2, d: "piastri" },
+        ],
+      },
+      sprintPredictions: {},
+    });
+
+    const updated = useCalculatorStore
+      .getState()
+      .races.find((r) => r.id === upcoming.id);
+    expect(updated?.prediction).toHaveLength(2);
+    expect(updated?.prediction?.[0]).toBeUndefined();
+    expect(updated?.prediction?.[1]).toBe("piastri");
+  });
+
+  it("drops drivers that are not prediction eligible", () => {
+    const upcoming = useCalculatorStore
+      .getState()
+      .races.find((r) => r.status === "upcoming");
+    if (!upcoming) throw new Error("expected at least one upcoming race");
+
+    useCalculatorStore.getState().applyScenario({
+      predictions: {
+        [upcoming.id]: [
+          { p: 1, d: "ghost-driver" },
+          { p: 2, d: "norris" },
+        ],
+      },
+      sprintPredictions: {},
+    });
+
+    const updated = useCalculatorStore
+      .getState()
+      .races.find((r) => r.id === upcoming.id);
+    expect(updated?.prediction).toHaveLength(2);
+    expect(updated?.prediction?.[0]).toBeUndefined();
+    expect(updated?.prediction?.[1]).toBe("norris");
+  });
+
+  it("ignores scenarios that reference unknown races", () => {
+    useCalculatorStore.getState().applyScenario({
+      predictions: {
+        "does-not-exist": [{ p: 1, d: "norris" }],
+      },
+      sprintPredictions: {},
+    });
+
+    const { races } = useCalculatorStore.getState();
+    expect(races).toHaveLength(staticRaces.length);
+    expect(
+      races.every((r) => r.prediction === null && r.sprintPrediction === null),
+    ).toBe(true);
+  });
+});
+
+describe("resetPredictions edge cases", () => {
+  it("preserves completed race object identity across resets", () => {
+    const completedBefore = useCalculatorStore
+      .getState()
+      .races.filter((r) => r.status === "completed");
+
+    useCalculatorStore.getState().resetPredictions();
+
+    const after = useCalculatorStore.getState().races;
+    completedBefore.forEach((race) => {
+      expect(after.find((r) => r.id === race.id)).toBe(race);
+    });
+  });
+});
