@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -9,67 +9,25 @@ import { APP_SEASON, DATA_SOURCE_BASE_URL } from "../src/config/season.js";
 import type { Driver } from "../src/types/driver.js";
 import type { EventResultEntry, Race } from "../src/types/race.js";
 import type { Team } from "../src/types/team.js";
-
-type SourceConstructor = {
-  constructorId: string;
-  name: string;
-  nationality?: string;
-};
-
-type SourceDriver = {
-  driverId: string;
-  permanentNumber?: string;
-  code?: string;
-  givenName: string;
-  familyName: string;
-  nationality?: string;
-};
-
-type SourceResult = {
-  position?: string;
-  positionOrder?: string;
-  points?: string;
-  status?: string;
-  Driver: SourceDriver;
-  Constructor: SourceConstructor;
-};
-
-type SourceDriverStanding = {
-  Driver: SourceDriver;
-  Constructors: SourceConstructor[];
-};
-
-type SourceRace = {
-  season: string;
-  round: string;
-  raceName: string;
-  date: string;
-  Circuit: {
-    circuitName: string;
-  };
-  Sprint?: unknown;
-  Results?: SourceResult[];
-  SprintResults?: SourceResult[];
-};
-
-type JolpicaResponse = {
-  MRData?: {
-    RaceTable?: {
-      Races?: SourceRace[];
-    };
-    DriverTable?: {
-      Drivers?: SourceDriver[];
-    };
-    ConstructorTable?: {
-      Constructors?: SourceConstructor[];
-    };
-    StandingsTable?: {
-      StandingsLists?: Array<{
-        DriverStandings?: SourceDriverStanding[];
-      }>;
-    };
-  };
-};
+import { fetchJson, sleep, type FetchJsonOptions } from "./http.js";
+import {
+  driverSchema,
+  driversFileSchema,
+  eventResultEntrySchema,
+  formatZodIssues,
+  jolpicaResponseSchema,
+  metadataFileSchema,
+  raceSchema,
+  racesFileSchema,
+  teamSchema,
+  teamsFileSchema,
+  type JolpicaResponse,
+  type SourceConstructor,
+  type SourceDriver,
+  type SourceDriverStanding,
+  type SourceRace,
+  type SourceResult,
+} from "./schemas.js";
 
 export type UpdateMetadata = {
   season: number;
@@ -104,47 +62,6 @@ const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const DATA_DIR = path.join(ROOT_DIR, "src", "data");
 
 const DEFAULT_TEAM_COLOR = "#737373";
-
-const eventResultEntrySchema = z.object({
-  position: z.number().int().positive(),
-  driverId: z.string().min(1),
-  teamId: z.string().min(1),
-  status: z.string().optional(),
-  points: z.number().optional(),
-});
-
-const driverSchema = z.object({
-  id: z.string().min(1),
-  sourceId: z.string().optional(),
-  number: z.number().int().nullable(),
-  code: z.string().min(1),
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
-  teamId: z.string().min(1),
-  country: z.string().min(1),
-});
-
-const teamSchema = z.object({
-  id: z.string().min(1),
-  sourceId: z.string().optional(),
-  name: z.string().min(1),
-  fullName: z.string().min(1),
-  color: z.string().min(1),
-});
-
-const raceSchema = z.object({
-  id: z.string().min(1),
-  round: z.number().int().positive(),
-  name: z.string().min(1),
-  circuit: z.string().min(1),
-  date: z.string().min(1),
-  status: z.union([z.literal("completed"), z.literal("upcoming")]),
-  hasSprint: z.boolean().optional(),
-  grandPrixResult: z.array(eventResultEntrySchema).nullable(),
-  sprintResult: z.array(eventResultEntrySchema).nullable().optional(),
-  prediction: z.null(),
-  sprintPrediction: z.null(),
-});
 
 export function normalizeSourceId(id: string): string {
   return id
@@ -633,47 +550,37 @@ export function validateGeneratedData(data: GeneratedData): void {
   }
 }
 
-async function fetchJson(url: string): Promise<JolpicaResponse> {
-  const maxAttempts = 6;
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const response = await fetch(url);
-    if (response.ok) {
-      return (await response.json()) as JolpicaResponse;
-    }
-
-    if (
-      attempt < maxAttempts &&
-      (response.status === 429 || response.status >= 500)
-    ) {
-      const retryAfterHeader = response.headers.get("retry-after");
-      const retryAfter = retryAfterHeader === null ? NaN : Number(retryAfterHeader);
-      const delayMs = Number.isFinite(retryAfter) && retryAfter > 0
-        ? retryAfter * 1000
-        : attempt * 2500;
-      await sleep(delayMs);
-      continue;
-    }
-
-    throw new Error(`Fetch failed ${response.status} ${response.statusText}: ${url}`);
+/**
+ * Validates a raw API payload against the Jolpica response schema. Throws a
+ * human-readable error listing every zod issue when validation fails.
+ */
+export function parseJolpicaResponse(data: unknown, url: string): JolpicaResponse {
+  const parsed = jolpicaResponseSchema.safeParse(data);
+  if (!parsed.success) {
+    throw new Error(
+      `Invalid Jolpica API response from ${url}:\n${formatZodIssues(parsed.error)}`,
+    );
   }
-
-  throw new Error(`Fetch failed after retries: ${url}`);
+  return parsed.data;
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+async function fetchApiJson(url: string, options: FetchJsonOptions): Promise<JolpicaResponse> {
+  return parseJolpicaResponse(await fetchJson(url, options), url);
 }
 
 function racesFromResponse(response: JolpicaResponse): SourceRace[] {
   return response.MRData?.RaceTable?.Races ?? [];
 }
 
-async function fetchSourceData(season: number): Promise<SourceData> {
+async function fetchSourceData(
+  season: number,
+  options: FetchJsonOptions = {},
+): Promise<SourceData> {
   const [calendar, drivers, constructors, standings] = await Promise.all([
-    fetchJson(`${DATA_SOURCE_BASE_URL}/${season}.json?limit=100`),
-    fetchJson(`${DATA_SOURCE_BASE_URL}/${season}/drivers.json?limit=1000`),
-    fetchJson(`${DATA_SOURCE_BASE_URL}/${season}/constructors.json?limit=1000`),
-    fetchJson(`${DATA_SOURCE_BASE_URL}/${season}/driverstandings.json?limit=1000`),
+    fetchApiJson(`${DATA_SOURCE_BASE_URL}/${season}.json?limit=100`, options),
+    fetchApiJson(`${DATA_SOURCE_BASE_URL}/${season}/drivers.json?limit=1000`, options),
+    fetchApiJson(`${DATA_SOURCE_BASE_URL}/${season}/constructors.json?limit=1000`, options),
+    fetchApiJson(`${DATA_SOURCE_BASE_URL}/${season}/driverstandings.json?limit=1000`, options),
   ]);
   const calendarRaces = racesFromResponse(calendar);
   const seasonDrivers = drivers.MRData?.DriverTable?.Drivers ?? [];
@@ -684,12 +591,12 @@ async function fetchSourceData(season: number): Promise<SourceData> {
   const sprintResults: JolpicaResponse[] = [];
   for (const race of calendarRaces) {
     grandPrixResults.push(
-      await fetchJson(`${DATA_SOURCE_BASE_URL}/${season}/${race.round}/results.json`),
+      await fetchApiJson(`${DATA_SOURCE_BASE_URL}/${season}/${race.round}/results.json`, options),
     );
     await sleep(100);
     if (race.Sprint) {
       sprintResults.push(
-        await fetchJson(`${DATA_SOURCE_BASE_URL}/${season}/${race.round}/sprint.json`),
+        await fetchApiJson(`${DATA_SOURCE_BASE_URL}/${season}/${race.round}/sprint.json`, options),
       );
       await sleep(250);
     }
@@ -717,20 +624,113 @@ async function readExistingData(): Promise<ExistingData> {
   };
 }
 
-async function writeJsonFile(fileName: string, value: unknown): Promise<void> {
+type WriteStats = {
+  bytes: number;
+  durationMs: number;
+};
+
+/**
+ * Writes JSON atomically: the payload goes to `<file>.tmp` first and is then
+ * renamed over the target, so a crash never leaves a truncated file behind.
+ */
+async function writeJsonFile(fileName: string, value: unknown): Promise<WriteStats> {
+  const startedAt = performance.now();
+  const content = `${JSON.stringify(value, null, 2)}\n`;
+  const filePath = path.join(DATA_DIR, fileName);
+  const tmpPath = `${filePath}.tmp`;
   await mkdir(DATA_DIR, { recursive: true });
-  await writeFile(path.join(DATA_DIR, fileName), `${JSON.stringify(value, null, 2)}\n`);
+  try {
+    await writeFile(tmpPath, content, "utf8");
+    await rename(tmpPath, filePath);
+  } catch (error) {
+    await rm(tmpPath, { force: true }).catch(() => {});
+    throw error;
+  }
+  return {
+    bytes: Buffer.byteLength(content, "utf8"),
+    durationMs: performance.now() - startedAt,
+  };
+}
+
+function describeValue(value: unknown): string {
+  return Array.isArray(value) ? `${value.length} records` : "1 record";
 }
 
 async function writeGeneratedData(data: GeneratedData): Promise<void> {
-  await writeJsonFile("drivers.json", data.drivers);
-  await writeJsonFile("teams.json", data.teams);
-  await writeJsonFile("races.json", data.races);
-  await writeJsonFile("metadata.json", data.metadata);
+  const startedAt = performance.now();
+  const files: Array<[string, unknown]> = [
+    ["drivers.json", data.drivers],
+    ["teams.json", data.teams],
+    ["races.json", data.races],
+    ["metadata.json", data.metadata],
+  ];
+  for (const [fileName, value] of files) {
+    const stats = await writeJsonFile(fileName, value);
+    console.log(
+      `Wrote ${fileName}: ${describeValue(value)}, ${stats.bytes} bytes, ${stats.durationMs.toFixed(0)} ms`,
+    );
+  }
+  console.log(
+    `Summary: updated ${files.length} files for ${data.metadata.season}: ` +
+      `${data.drivers.length} drivers, ${data.teams.length} teams, ` +
+      `${data.races.length} races in ${(performance.now() - startedAt).toFixed(0)} ms.`,
+  );
+}
+
+const DATA_FILES: Array<{ fileName: string; schema: z.ZodType }> = [
+  { fileName: "drivers.json", schema: driversFileSchema },
+  { fileName: "teams.json", schema: teamsFileSchema },
+  { fileName: "races.json", schema: racesFileSchema },
+  { fileName: "metadata.json", schema: metadataFileSchema },
+];
+
+/**
+ * Validates the existing src/data/*.json files against the output schemas.
+ * Reports per-file pass/fail and returns the number of invalid files.
+ * Performs no network access.
+ */
+export async function validateDataFiles(): Promise<number> {
+  let failed = 0;
+  for (const { fileName, schema } of DATA_FILES) {
+    const startedAt = performance.now();
+    try {
+      const raw = await readFile(path.join(DATA_DIR, fileName), "utf8");
+      const parsed = schema.safeParse(JSON.parse(raw));
+      const durationMs = (performance.now() - startedAt).toFixed(0);
+      if (parsed.success) {
+        console.log(
+          `${fileName}: PASS (${describeValue(parsed.data)}, ${Buffer.byteLength(raw, "utf8")} bytes, ${durationMs} ms)`,
+        );
+      } else {
+        failed += 1;
+        console.error(`${fileName}: FAIL`);
+        console.error(formatZodIssues(parsed.error));
+      }
+    } catch (error) {
+      failed += 1;
+      console.error(
+        `${fileName}: FAIL (${error instanceof Error ? error.message : String(error)})`,
+      );
+    }
+  }
+  console.log(
+    failed === 0
+      ? `Validation summary: ${DATA_FILES.length}/${DATA_FILES.length} files valid.`
+      : `Validation summary: ${DATA_FILES.length - failed}/${DATA_FILES.length} files valid, ${failed} failed.`,
+  );
+  return failed;
 }
 
 async function main(): Promise<void> {
-  const dryRun = process.argv.includes("--dry-run");
+  const args = process.argv.slice(2);
+
+  if (args.includes("--validate")) {
+    const failed = await validateDataFiles();
+    if (failed > 0) process.exitCode = 1;
+    return;
+  }
+
+  const dryRun = args.includes("--dry-run");
   const existing = await readExistingData();
   const source = await fetchSourceData(APP_SEASON);
   const generated = transformSourceData(source, existing, APP_SEASON);
@@ -758,15 +758,12 @@ async function main(): Promise<void> {
   }
 
   await writeGeneratedData(generated);
-  console.log(
-    `Updated data for ${APP_SEASON}: ${generated.drivers.length} drivers, ${generated.teams.length} teams, ${generated.races.length} races.`,
-  );
   for (const warning of generated.metadata.warnings) console.warn(warning);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch((error: unknown) => {
-    console.error(error);
+    console.error(error instanceof Error ? error.message : error);
     process.exit(1);
   });
 }
