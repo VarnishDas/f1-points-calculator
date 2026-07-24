@@ -115,7 +115,6 @@ function DraggableCellDriver({
       aria-label={`Drag ${driver.firstName} ${driver.lastName}`}
       {...attributes}
       {...listeners}
-      tabIndex={-1}
     />
   );
 }

@@ -1,6 +1,11 @@
-import type {
-  DragEndEvent,
-  DragStartEvent,
+import {
+  closestCenter,
+  pointerWithin,
+  type Announcements,
+  type CollisionDetection,
+  type DragEndEvent,
+  type DragStartEvent,
+  type ScreenReaderInstructions,
 } from "@dnd-kit/core";
 
 import type { PredictionSessionType } from "../types/race";
@@ -127,4 +132,77 @@ export function getPredictionDraggableId(
   driverId: string,
 ): string {
   return `pick:${raceId}:${session}:${driverId}`;
+}
+
+/**
+ * Collision detection for mixed pointer/keyboard dragging.
+ *
+ * `pointerWithin` only works when the drag has pointer coordinates, so
+ * keyboard drags (which have none) fall back to `closestCenter`. Pointer
+ * behaviour is unchanged.
+ */
+export const predictionCollisionDetection: CollisionDetection = (args) =>
+  args.pointerCoordinates ? pointerWithin(args) : closestCenter(args);
+
+export const predictionScreenReaderInstructions: ScreenReaderInstructions = {
+  draggable:
+    "To pick up a driver, press Enter or space. While dragging, use the arrow keys to move the driver over a prediction position. Press Enter or space to drop the driver, or press Escape to cancel.",
+};
+
+type PredictionDragLabels = {
+  getDriverName: (driverId: string) => string;
+  getEventName: (raceId: string, session: PredictionSessionType) => string;
+};
+
+/**
+ * Build screen reader announcements for prediction drags, using human
+ * readable driver and event names instead of dnd-kit's raw id announcements.
+ */
+export function createPredictionDragAnnouncements({
+  getDriverName,
+  getEventName,
+}: PredictionDragLabels): Announcements {
+  const describeTarget = (over: PredictionDropData | undefined) =>
+    over
+      ? `${getEventName(over.raceId, over.session)}, position ${over.index + 1}`
+      : undefined;
+
+  return {
+    onDragStart({ active }) {
+      const data = active.data.current as PredictionDragData | undefined;
+      if (!data) return undefined;
+      const driverName = getDriverName(data.driverId);
+      if (data.type === "prediction-driver") {
+        return `Picked up ${driverName} from ${getEventName(data.raceId, data.session)}, position ${data.index + 1}.`;
+      }
+      return `Picked up ${driverName} from the driver pool.`;
+    },
+    onDragOver({ active, over }) {
+      const data = active.data.current as PredictionDragData | undefined;
+      if (!data) return undefined;
+      const driverName = getDriverName(data.driverId);
+      const target = describeTarget(
+        over?.data.current as PredictionDropData | undefined,
+      );
+      return target
+        ? `${driverName} is over ${target}.`
+        : `${driverName} is not over a prediction position.`;
+    },
+    onDragEnd({ active, over }) {
+      const data = active.data.current as PredictionDragData | undefined;
+      if (!data) return undefined;
+      const driverName = getDriverName(data.driverId);
+      const target = describeTarget(
+        over?.data.current as PredictionDropData | undefined,
+      );
+      return target
+        ? `${driverName} was dropped on ${target}.`
+        : `${driverName} was dropped outside a prediction position.`;
+    },
+    onDragCancel({ active }) {
+      const data = active.data.current as PredictionDragData | undefined;
+      if (!data) return undefined;
+      return `Dragging ${getDriverName(data.driverId)} was cancelled.`;
+    },
+  };
 }

@@ -30,8 +30,18 @@ function App() {
   const driverStandings = projected.drivers;
   const teamStandings = projected.teams;
 
+  const leader = driverStandings[0];
+  const leaderDriver = leader
+    ? drivers.find((driver) => driver.id === leader.driverId)
+    : undefined;
+
   return (
     <main className="flex min-h-screen flex-col overflow-y-auto bg-neutral-950 text-neutral-100 lg:h-screen lg:min-h-0 lg:overflow-hidden">
+      <span className="sr-only" role="status" aria-live="polite">
+        {leaderDriver && leader
+          ? `Projected championship leader: ${leaderDriver.firstName} ${leaderDriver.lastName}, ${leader.points} points.`
+          : ""}
+      </span>
       <AppHeader onReset={resetPredictions} />
       <DashboardLayout
         standings={

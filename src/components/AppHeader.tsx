@@ -82,7 +82,7 @@ export default function AppHeader({ onReset }: AppHeaderProps) {
             type="button"
             onClick={() => setIsResetConfirmationOpen(true)}
             aria-label="Reset all predictions"
-            className="inline-flex h-10 w-10 items-center justify-center gap-1.5 rounded-md border border-white/10 bg-white/[0.03] text-xs font-semibold text-neutral-200 transition hover:border-white/20 hover:bg-white/[0.07] sm:h-8 sm:w-auto sm:px-3"
+            className="inline-flex h-10 w-10 items-center justify-center gap-1.5 rounded-md border border-white/10 bg-white/[0.03] text-xs font-semibold text-neutral-200 transition hover:border-white/20 hover:bg-white/[0.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 sm:h-8 sm:w-auto sm:px-3"
           >
             <span aria-hidden="true" className="text-base leading-none">
               ↺
@@ -92,7 +92,7 @@ export default function AppHeader({ onReset }: AppHeaderProps) {
           <button
             type="button"
             onClick={handleShare}
-            className="inline-flex h-10 w-10 items-center justify-center gap-1.5 rounded-md bg-red-600 text-xs font-bold text-white shadow-[0_0_22px_rgba(220,38,38,0.25)] transition hover:bg-red-500 sm:h-8 sm:w-auto sm:px-3"
+            className="inline-flex h-10 w-10 items-center justify-center gap-1.5 rounded-md bg-red-600 text-xs font-bold text-white shadow-[0_0_22px_rgba(220,38,38,0.25)] transition hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 sm:h-8 sm:w-auto sm:px-3"
             aria-label={
               shareStatus === "copied"
                 ? "Scenario URL copied to clipboard"
@@ -144,7 +144,7 @@ export default function AppHeader({ onReset }: AppHeaderProps) {
         <>
           <button
             type="button"
-            className="fixed inset-0 z-40 bg-black/75 backdrop-blur-[2px]"
+            className="fixed inset-0 z-40 bg-black/75 backdrop-blur-[2px] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-amber-400"
             onClick={() => setIsResetConfirmationOpen(false)}
             aria-label="Cancel reset"
           />
@@ -183,14 +183,14 @@ export default function AppHeader({ onReset }: AppHeaderProps) {
                 ref={cancelResetButtonRef}
                 type="button"
                 onClick={() => setIsResetConfirmationOpen(false)}
-                className="h-11 rounded-md border border-white/10 bg-white/[0.04] text-sm font-bold text-neutral-200 transition hover:bg-white/[0.08]"
+                className="h-11 rounded-md border border-white/10 bg-white/[0.04] text-sm font-bold text-neutral-200 transition hover:bg-white/[0.08] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={confirmReset}
-                className="h-11 rounded-md bg-red-600 text-sm font-black text-white shadow-[0_0_22px_rgba(220,38,38,0.2)] transition hover:bg-red-500"
+                className="h-11 rounded-md bg-red-600 text-sm font-black text-white shadow-[0_0_22px_rgba(220,38,38,0.2)] transition hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
               >
                 Reset predictions
               </button>
