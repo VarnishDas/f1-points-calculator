@@ -34,6 +34,7 @@ If nothing changed, the script reports it and leaves the files untouched.
 ```bash
 pnpm data:update       # fetch and update src/data/*.json
 pnpm data:update:dry   # same, but writes nothing (--dry-run)
+pnpm data:validate     # offline schema check of committed src/data/*.json
 ```
 
 The transformation and validation logic is unit-tested in `scripts/update-data.test.ts` (`pnpm test`).

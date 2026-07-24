@@ -677,6 +677,13 @@ async function writeGeneratedData(data: GeneratedData): Promise<void> {
   );
 }
 
+async function writeMetadataOnly(metadata: UpdateMetadata): Promise<void> {
+  const stats = await writeJsonFile("metadata.json", metadata);
+  console.log(
+    `Wrote metadata.json: 1 record, ${stats.bytes} bytes, ${stats.durationMs.toFixed(0)} ms`,
+  );
+}
+
 const DATA_FILES: Array<{ fileName: string; schema: z.ZodType }> = [
   { fileName: "drivers.json", schema: driversFileSchema },
   { fileName: "teams.json", schema: teamsFileSchema },
@@ -751,13 +758,18 @@ async function main(): Promise<void> {
     return;
   }
 
-  if (!dataChanged) {
-    console.log("No driver, team, or race changes found; data files were not updated.");
-    for (const warning of generated.metadata.warnings) console.warn(warning);
-    return;
+  if (dataChanged) {
+    await writeGeneratedData(generated);
+    console.log(
+      `Updated data files: ${generated.drivers.length} drivers, ${generated.teams.length} teams, ${generated.races.length} races.`,
+    );
+  } else {
+    // Still stamp metadata so "data as of" reflects the last successful API sync.
+    await writeMetadataOnly(generated.metadata);
+    console.log(
+      "No driver, team, or race changes found; refreshed metadata.generatedAt from live API.",
+    );
   }
-
-  await writeGeneratedData(generated);
   for (const warning of generated.metadata.warnings) console.warn(warning);
 }
 

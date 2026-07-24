@@ -27,6 +27,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Validate F1 data files
+        run: pnpm data:validate
+
       - name: Lint
         run: pnpm lint
 

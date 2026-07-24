@@ -37,6 +37,7 @@ pnpm dev
 | `pnpm test`            | Run the Vitest suite once.                                         |
 | `pnpm data:update`     | Fetch the latest F1 data and rewrite `src/data/*.json`.            |
 | `pnpm data:update:dry` | Same as above but writes nothing (`--dry-run`).                    |
+| `pnpm data:validate`   | Validate committed `src/data/*.json` against Zod schemas offline.  |
 
 See [docs/data-pipeline.md](docs/data-pipeline.md) for how the data refresh works.
 

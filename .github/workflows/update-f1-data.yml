@@ -3,7 +3,8 @@ name: Update F1 data
 on:
   workflow_dispatch:
   schedule:
-    - cron: "30 2 * * 1"
+    # Daily: pick up race results shortly after race weekends without waiting a full week.
+    - cron: "15 4 * * *"
 
 permissions:
   contents: write
@@ -34,6 +35,9 @@ jobs:
 
       - name: Fetch data and compare the race calendar
         run: pnpm data:update
+
+      - name: Validate committed data schemas
+        run: pnpm data:validate
 
       - name: Lint
         run: pnpm lint
