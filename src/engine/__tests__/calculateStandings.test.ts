@@ -456,3 +456,148 @@ describe("calculateStandings (event-specific official results)", () => {
     expect(standings.teams.find((entry) => entry.teamId === "team-a")?.points).toBe(33);
   });
 });
+
+describe("calculateStandings (boundary conditions)", () => {
+  const testTeams: Team[] = [
+    { id: "team", name: "Team", fullName: "Team", color: "#000000" },
+  ];
+
+  function boundaryDrivers(ids: string[]): Driver[] {
+    return ids.map((id, index) => ({
+      id,
+      number: index + 1,
+      code: id.toUpperCase(),
+      firstName: id,
+      lastName: id,
+      teamId: "team",
+      country: "X",
+    }));
+  }
+
+  it("honours explicit official points instead of the points table", () => {
+    const testRaces: Race[] = [
+      {
+        id: "r1",
+        round: 1,
+        name: "R1",
+        circuit: "Test",
+        date: "2026-01-01",
+        status: "completed",
+        grandPrixResult: [{ position: 1, driverId: "a", teamId: "team", points: 19 }],
+        sprintResult: null,
+        prediction: null,
+        sprintPrediction: null,
+      },
+    ];
+
+    const standings = calculateStandings(testRaces, boundaryDrivers(["a"]), testTeams);
+
+    expect(standings.drivers[0]).toMatchObject({ points: 19, wins: 1 });
+    expect(standings.teams[0].points).toBe(19);
+  });
+
+  it("handles sparse official classifications with missing positions", () => {
+    const testRaces: Race[] = [
+      {
+        id: "r1",
+        round: 1,
+        name: "R1",
+        circuit: "Test",
+        date: "2026-01-01",
+        status: "completed",
+        grandPrixResult: [
+          { position: 1, driverId: "a", teamId: "team" },
+          { position: 3, driverId: "b", teamId: "team" },
+        ],
+        sprintResult: null,
+        prediction: null,
+        sprintPrediction: null,
+      },
+    ];
+
+    const standings = calculateStandings(
+      testRaces,
+      boundaryDrivers(["a", "b"]),
+      testTeams,
+    );
+
+    expect(standings.drivers.find((entry) => entry.driverId === "a")).toMatchObject({
+      position: 1,
+      points: 25,
+      wins: 1,
+    });
+    expect(standings.drivers.find((entry) => entry.driverId === "b")).toMatchObject({
+      position: 2,
+      points: 15,
+      wins: 0,
+    });
+  });
+
+  it("treats an empty official classification as no result", () => {
+    const testRaces: Race[] = [
+      {
+        id: "r1",
+        round: 1,
+        name: "R1",
+        circuit: "Test",
+        date: "2026-01-01",
+        status: "completed",
+        grandPrixResult: [],
+        sprintResult: [],
+        prediction: null,
+        sprintPrediction: null,
+      },
+    ];
+
+    const standings = calculateStandings(
+      testRaces,
+      boundaryDrivers(["a", "b"]),
+      testTeams,
+    );
+
+    expect(standings.drivers.every((entry) => entry.points === 0)).toBe(true);
+    expect(standings.teams.every((entry) => entry.points === 0)).toBe(true);
+  });
+
+  it("scores drivers by position regardless of their official status note", () => {
+    // Fastest-lap bonuses are intentionally not modeled; status text such as
+    // "+1 Lap" never changes the points awarded for a position.
+    const testRaces: Race[] = [
+      {
+        id: "r1",
+        round: 1,
+        name: "R1",
+        circuit: "Test",
+        date: "2026-01-01",
+        status: "completed",
+        grandPrixResult: [
+          { position: 1, driverId: "a", teamId: "team", status: "Finished" },
+          { position: 2, driverId: "b", teamId: "team", status: "+1 Lap" },
+        ],
+        sprintResult: null,
+        prediction: null,
+        sprintPrediction: null,
+      },
+    ];
+
+    const standings = calculateStandings(
+      testRaces,
+      boundaryDrivers(["a", "b"]),
+      testTeams,
+    );
+
+    expect(standings.drivers.find((entry) => entry.driverId === "a")?.points).toBe(25);
+    expect(standings.drivers.find((entry) => entry.driverId === "b")?.points).toBe(18);
+  });
+
+  it("keeps zero-point drivers in input order when no countback data exists", () => {
+    const standings = calculateStandings(
+      [],
+      boundaryDrivers(["x", "y", "z"]),
+      testTeams,
+    );
+
+    expect(standings.drivers.map((entry) => entry.driverId)).toEqual(["x", "y", "z"]);
+    expect(standings.drivers.map((entry) => entry.position)).toEqual([1, 2, 3]);
+  });
+});

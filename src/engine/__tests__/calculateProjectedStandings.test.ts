@@ -271,4 +271,152 @@ describe("calculateProjectedStandings", () => {
       expect(JSON.stringify(testRaces)).toBe(snapshot);
     });
   });
+
+  describe("boundary conditions", () => {
+    const boundaryTeams: Team[] = [
+      { id: "team", name: "Team", fullName: "Team", color: "#000000" },
+    ];
+
+    function boundaryDrivers(ids: string[]): Driver[] {
+      return ids.map((id, index) => ({
+        id,
+        number: index + 1,
+        code: id.toUpperCase(),
+        firstName: id,
+        lastName: id,
+        teamId: "team",
+        country: "X",
+      }));
+    }
+
+    function boundaryRace(partial: Partial<Race> & Pick<Race, "id" | "status">): Race {
+      return {
+        round: 1,
+        name: partial.id,
+        circuit: "Test",
+        date: "2026-01-01",
+        grandPrixResult: null,
+        sprintResult: null,
+        prediction: null,
+        sprintPrediction: null,
+        ...partial,
+      };
+    }
+
+    it("scores sparse predictions by array index, skipping holes", () => {
+      const prediction: string[] = [];
+      prediction[2] = "a";
+      const testRaces: Race[] = [
+        boundaryRace({ id: "r1", status: "upcoming", prediction }),
+      ];
+
+      const standings = calculateProjectedStandings(
+        testRaces,
+        boundaryDrivers(["a"]),
+        boundaryTeams,
+      );
+
+      expect(standings.drivers[0]).toMatchObject({ points: 15, wins: 0 });
+    });
+
+    it("awards no points for predicted finishes outside the points table", () => {
+      const testRaces: Race[] = [
+        boundaryRace({
+          id: "r1",
+          status: "upcoming",
+          prediction: ["f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "a"],
+        }),
+      ];
+      const ids = ["a", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10"];
+
+      const standings = calculateProjectedStandings(
+        testRaces,
+        boundaryDrivers(ids),
+        boundaryTeams,
+      );
+
+      expect(standings.drivers.find((entry) => entry.driverId === "a")?.points).toBe(0);
+      expect(standings.drivers.find((entry) => entry.driverId === "f10")?.points).toBe(1);
+    });
+
+    it("uses predicted non-scoring finishes for countback ordering", () => {
+      // x predicted P11 (0 pts) still outranks y (never classified) on countback.
+      const testRaces: Race[] = [
+        boundaryRace({
+          id: "r1",
+          status: "upcoming",
+          prediction: ["f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "x"],
+        }),
+      ];
+      const ids = ["y", "x", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10"];
+
+      const standings = calculateProjectedStandings(
+        testRaces,
+        boundaryDrivers(ids),
+        boundaryTeams,
+      );
+
+      const x = standings.drivers.find((entry) => entry.driverId === "x");
+      const y = standings.drivers.find((entry) => entry.driverId === "y");
+      expect(x?.points).toBe(0);
+      expect(y?.points).toBe(0);
+      expect(x!.position).toBeLessThan(y!.position);
+    });
+
+    it("breaks projected points ties via championship countback", () => {
+      // b has an official win (25 pts). a reaches 25 via official P3 plus a
+      // predicted P5, so b ranks ahead on wins.
+      const drivers = boundaryDrivers(["a", "b", "f", "x", "y", "z"]);
+      const testRaces: Race[] = [
+        boundaryRace({
+          id: "r1",
+          status: "completed",
+          grandPrixResult: [
+            { position: 1, driverId: "b", teamId: "team" },
+            { position: 2, driverId: "f", teamId: "team" },
+            { position: 3, driverId: "a", teamId: "team" },
+          ],
+        }),
+        boundaryRace({
+          id: "r2",
+          round: 2,
+          status: "upcoming",
+          prediction: ["f", "x", "y", "z", "a"],
+        }),
+      ];
+
+      const standings = calculateProjectedStandings(testRaces, drivers, boundaryTeams);
+
+      const a = standings.drivers.find((entry) => entry.driverId === "a");
+      const b = standings.drivers.find((entry) => entry.driverId === "b");
+      expect(a?.points).toBe(25);
+      expect(b?.points).toBe(25);
+      expect(b!.position).toBeLessThan(a!.position);
+    });
+
+    it("awards a single point for a predicted sprint P8 but none for P9", () => {
+      const drivers = boundaryDrivers(["p8", "p9"]);
+      const testRaces: Race[] = [
+        boundaryRace({
+          id: "r1",
+          status: "upcoming",
+          hasSprint: true,
+          sprintPrediction: ["f1", "f2", "f3", "f4", "f5", "f6", "f7", "p8", "p9"],
+        }),
+      ];
+      const withFillers = [
+        ...drivers,
+        ...boundaryDrivers(["f1", "f2", "f3", "f4", "f5", "f6", "f7"]),
+      ];
+
+      const standings = calculateProjectedStandings(
+        testRaces,
+        withFillers,
+        boundaryTeams,
+      );
+
+      expect(standings.drivers.find((entry) => entry.driverId === "p8")?.points).toBe(1);
+      expect(standings.drivers.find((entry) => entry.driverId === "p9")?.points).toBe(0);
+    });
+  });
 });
