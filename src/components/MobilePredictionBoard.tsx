@@ -169,7 +169,7 @@ export default function MobilePredictionBoard({
           type="button"
           onClick={() => selectRaceAtIndex(selectedRaceIndex - 1)}
           disabled={selectedRaceIndex === 0}
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-md border border-white/10 bg-white/[0.03] text-xl text-neutral-200 disabled:opacity-30"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-md border border-white/10 bg-white/[0.03] text-xl text-neutral-200 disabled:opacity-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
           aria-label="Previous race"
         >
           ‹
@@ -184,7 +184,7 @@ export default function MobilePredictionBoard({
               );
               selectRaceAtIndex(index);
             }}
-            className="h-11 w-full appearance-none rounded-md border border-white/10 bg-neutral-900 px-3 text-center text-sm font-black text-white"
+            className="h-11 w-full appearance-none rounded-md border border-white/10 bg-neutral-900 px-3 text-center text-sm font-black text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
           >
             {sortedRaces.map((race) => (
               <option key={race.id} value={race.id}>
@@ -197,7 +197,7 @@ export default function MobilePredictionBoard({
           type="button"
           onClick={() => selectRaceAtIndex(selectedRaceIndex + 1)}
           disabled={selectedRaceIndex === sortedRaces.length - 1}
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-md border border-white/10 bg-white/[0.03] text-xl text-neutral-200 disabled:opacity-30"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-md border border-white/10 bg-white/[0.03] text-xl text-neutral-200 disabled:opacity-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
           aria-label="Next race"
         >
           ›
@@ -253,8 +253,8 @@ export default function MobilePredictionBoard({
               disabled={!isEditable}
               className={
                 driver
-                  ? "relative flex h-14 min-w-0 items-center gap-2 overflow-hidden rounded-md border border-white/10 bg-white/[0.05] px-2 text-left"
-                  : "flex h-14 min-w-0 items-center gap-2 rounded-md border border-dashed border-white/15 bg-black/20 px-2 text-left"
+                  ? "relative flex h-14 min-w-0 items-center gap-2 overflow-hidden rounded-md border border-white/10 bg-white/[0.05] px-2 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+                  : "flex h-14 min-w-0 items-center gap-2 rounded-md border border-dashed border-white/15 bg-black/20 px-2 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
               }
               aria-label={
                 driver
@@ -296,7 +296,7 @@ export default function MobilePredictionBoard({
         <>
           <button
             type="button"
-            className="fixed inset-0 z-40 bg-black/70"
+            className="fixed inset-0 z-40 bg-black/70 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-amber-400"
             onClick={() => setSelectedPosition(null)}
             aria-label="Close driver picker"
           />
@@ -322,27 +322,30 @@ export default function MobilePredictionBoard({
                 <button
                   type="button"
                   onClick={() => setSelectedPosition(null)}
-                  className="grid h-10 w-10 place-items-center rounded-md border border-white/10 text-lg text-neutral-300"
+                  className="grid h-10 w-10 place-items-center rounded-md border border-white/10 text-lg text-neutral-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
                   aria-label="Close driver picker"
                 >
                   ×
                 </button>
               </div>
               <div className="shrink-0 border-b border-white/10 p-3">
-                <input
-                  type="search"
-                  value={driverSearch}
-                  onChange={(event) => setDriverSearch(event.target.value)}
-                  placeholder="Search drivers or teams"
-                  className="driver-search-input h-11 w-full rounded-md border border-white/10 bg-white/[0.04] px-3 text-base text-white placeholder:text-neutral-600"
-                />
+                <label className="block">
+                  <span className="sr-only">Search drivers or teams</span>
+                  <input
+                    type="search"
+                    value={driverSearch}
+                    onChange={(event) => setDriverSearch(event.target.value)}
+                    placeholder="Search drivers or teams"
+                    className="driver-search-input h-11 w-full rounded-md border border-white/10 bg-white/[0.04] px-3 text-base text-white placeholder:text-neutral-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+                  />
+                </label>
               </div>
               <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto p-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
                 {currentDriverId ? (
                   <button
                     type="button"
                     onClick={clearSelectedPosition}
-                    className="mb-3 h-11 w-full rounded-md border border-red-500/25 bg-red-500/10 text-xs font-bold text-red-300"
+                    className="mb-3 h-11 w-full rounded-md border border-red-500/25 bg-red-500/10 text-xs font-bold text-red-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
                   >
                     Remove {driverById.get(currentDriverId)?.lastName ?? "driver"} from P{selectedPosition + 1}
                   </button>
@@ -364,8 +367,8 @@ export default function MobilePredictionBoard({
                         }`}
                         className={
                           isAssigned
-                            ? "relative min-h-14 overflow-hidden rounded-md border border-emerald-400/50 bg-emerald-400/10 px-3 py-2 text-left ring-1 ring-inset ring-emerald-400/15"
-                            : "relative min-h-14 overflow-hidden rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-left"
+                            ? "relative min-h-14 overflow-hidden rounded-md border border-emerald-400/50 bg-emerald-400/10 px-3 py-2 text-left ring-1 ring-inset ring-emerald-400/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+                            : "relative min-h-14 overflow-hidden rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
                         }
                       >
                         <span
@@ -420,8 +423,8 @@ function SessionButton({ active, label, onClick }: SessionButtonProps) {
       aria-pressed={active}
       className={
         active
-          ? "h-8 rounded bg-amber-500/10 px-3 text-[11px] font-black text-amber-400 ring-1 ring-amber-500/50"
-          : "h-8 rounded px-3 text-[11px] font-bold text-neutral-500"
+          ? "h-8 rounded bg-amber-500/10 px-3 text-[11px] font-black text-amber-400 ring-1 ring-amber-500/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+          : "h-8 rounded px-3 text-[11px] font-bold text-neutral-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
       }
     >
       {label}

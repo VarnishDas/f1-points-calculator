@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import {
   DndContext,
   DragOverlay,
+  KeyboardSensor,
   PointerSensor,
   type DragEndEvent,
   type DragStartEvent,
-  pointerWithin,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
@@ -20,11 +20,14 @@ import EmptyState from "./EmptyState";
 import MobilePredictionBoard from "./MobilePredictionBoard";
 import PredictionBoard from "./PredictionBoard";
 import {
+  createPredictionDragAnnouncements,
   getPredictionDragPayload,
   getPredictionDragStartPayload,
   getPredictionMoveSource,
   getPredictionRemovalSource,
   placeDriverAtPredictionPosition,
+  predictionCollisionDetection,
+  predictionScreenReaderInstructions,
   type PredictionDragData,
 } from "./predictionDnd";
 
@@ -47,7 +50,10 @@ export default function PredictionWorkspace({
   );
   const isDesktop = useDesktopLayout();
   const [activeDrag, setActiveDrag] = useState<PredictionDragData | null>(null);
-  const sensors = useSensors(useSensor(PointerSensor));
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor),
+  );
   const driverById = useMemo(
     () => new Map(drivers.map((driver) => [driver.id, driver])),
     [drivers],
@@ -55,6 +61,24 @@ export default function PredictionWorkspace({
   const teamById = useMemo(
     () => new Map(teams.map((team) => [team.id, team])),
     [teams],
+  );
+  const raceById = useMemo(
+    () => new Map(races.map((race) => [race.id, race])),
+    [races],
+  );
+  const announcements = useMemo(
+    () =>
+      createPredictionDragAnnouncements({
+        getDriverName: (driverId) => {
+          const driver = driverById.get(driverId);
+          return driver ? `${driver.firstName} ${driver.lastName}` : driverId;
+        },
+        getEventName: (raceId, session) => {
+          const raceName = raceById.get(raceId)?.name ?? raceId;
+          return session === "sprint" ? `${raceName} Sprint` : raceName;
+        },
+      }),
+    [driverById, raceById],
   );
   const activeDriver = activeDrag ? driverById.get(activeDrag.driverId) : undefined;
   const activeTeam = activeDriver ? teamById.get(activeDriver.teamId) : undefined;
@@ -148,7 +172,11 @@ export default function PredictionWorkspace({
       {hasUpcomingRaces ? (
         <DndContext
           sensors={sensors}
-          collisionDetection={pointerWithin}
+          collisionDetection={predictionCollisionDetection}
+          accessibility={{
+            announcements,
+            screenReaderInstructions: predictionScreenReaderInstructions,
+          }}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
           onDragCancel={() => setActiveDrag(null)}

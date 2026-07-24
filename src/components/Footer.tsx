@@ -9,7 +9,8 @@ export default function Footer() {
           href="https://varnishdas.dev"
           target="_blank"
           rel="noreferrer"
-          className="text-neutral-400 underline decoration-neutral-700 underline-offset-2 transition-colors hover:text-amber-400 hover:decoration-amber-400/60"
+          className="rounded-sm text-neutral-400 underline decoration-neutral-700 underline-offset-2 transition-colors hover:text-amber-400 hover:decoration-amber-400/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+
         >
           Varnish Das
         </a>
@@ -18,7 +19,8 @@ export default function Footer() {
           href="https://github.com/jolpica/jolpica-f1"
           target="_blank"
           rel="noreferrer"
-          className="text-neutral-400 underline decoration-neutral-700 underline-offset-2 transition-colors hover:text-amber-400 hover:decoration-amber-400/60"
+          className="rounded-sm text-neutral-400 underline decoration-neutral-700 underline-offset-2 transition-colors hover:text-amber-400 hover:decoration-amber-400/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+
         >
           Jolpica-F1
         </a>{" "}
@@ -27,7 +29,8 @@ export default function Footer() {
           href="https://creativecommons.org/licenses/by-nc-sa/4.0/"
           target="_blank"
           rel="noreferrer"
-          className="text-neutral-400 underline decoration-neutral-700 underline-offset-2 transition-colors hover:text-amber-400 hover:decoration-amber-400/60"
+          className="rounded-sm text-neutral-400 underline decoration-neutral-700 underline-offset-2 transition-colors hover:text-amber-400 hover:decoration-amber-400/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+
         >
           CC BY-NC-SA 4.0
         </a>

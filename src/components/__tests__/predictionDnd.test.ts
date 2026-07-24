@@ -1,12 +1,22 @@
 import { describe, expect, it } from "vitest";
+import type {
+  Active,
+  ClientRect,
+  CollisionDetection,
+  DroppableContainer,
+  Over,
+} from "@dnd-kit/core";
 
 import { RACE_CLASSIFICATION_SIZE } from "../../constants/race";
 import {
+  createPredictionDragAnnouncements,
   getPredictionMoveSource,
   getPredictionRemovalSource,
   getPredictionDroppableId,
   getPredictionDraggableId,
   placeDriverAtPredictionPosition,
+  predictionCollisionDetection,
+  predictionScreenReaderInstructions,
 } from "../predictionDnd";
 
 describe("getPredictionDroppableId", () => {
@@ -209,5 +219,149 @@ describe("getPredictionMoveSource", () => {
         },
       ),
     ).toBeNull();
+  });
+});
+
+describe("predictionCollisionDetection", () => {
+  const nearRect: ClientRect = {
+    top: 0,
+    left: 0,
+    width: 10,
+    height: 10,
+    bottom: 10,
+    right: 10,
+  };
+  const farRect: ClientRect = {
+    top: 100,
+    left: 100,
+    width: 10,
+    height: 10,
+    bottom: 110,
+    right: 110,
+  };
+  const baseArgs = {
+    active: {} as Active,
+    collisionRect: nearRect,
+    droppableContainers: [
+      { id: "cell:near" },
+      { id: "cell:far" },
+    ] as unknown as DroppableContainer[],
+    droppableRects: new Map([
+      ["cell:near", nearRect],
+      ["cell:far", farRect],
+    ]) as unknown as Parameters<CollisionDetection>[0]["droppableRects"],
+  };
+
+  it("uses pointerWithin when pointer coordinates exist", () => {
+    const collisions = predictionCollisionDetection({
+      ...baseArgs,
+      pointerCoordinates: { x: 105, y: 105 },
+    });
+
+    expect(collisions.map((collision) => collision.id)).toEqual(["cell:far"]);
+  });
+
+  it("falls back to closestCenter for keyboard drags without a pointer", () => {
+    const collisions = predictionCollisionDetection({
+      ...baseArgs,
+      pointerCoordinates: null,
+    });
+
+    expect(collisions[0]?.id).toBe("cell:near");
+  });
+});
+
+describe("predictionScreenReaderInstructions", () => {
+  it("explains how to operate a draggable with the keyboard", () => {
+    expect(predictionScreenReaderInstructions.draggable).toContain("Enter");
+    expect(predictionScreenReaderInstructions.draggable).toContain("space");
+    expect(predictionScreenReaderInstructions.draggable).toContain("Escape");
+  });
+});
+
+describe("createPredictionDragAnnouncements", () => {
+  const announcements = createPredictionDragAnnouncements({
+    getDriverName: (driverId) =>
+      driverId === "norris" ? "Lando Norris" : driverId,
+    getEventName: (raceId, session) =>
+      `${raceId}${session === "sprint" ? " Sprint" : ""}`,
+  });
+  const fakeActive = (data: unknown) =>
+    ({ data: { current: data } }) as unknown as Active;
+  const fakeOver = (data: unknown) =>
+    ({ data: { current: data } }) as unknown as Over;
+  const poolDrag = { type: "pool-driver", driverId: "norris" };
+  const placedDrag = {
+    type: "prediction-driver",
+    driverId: "norris",
+    raceId: "belgian-2026",
+    session: "grandPrix",
+    index: 0,
+  };
+  const targetCell = {
+    type: "prediction-cell",
+    raceId: "belgian-2026",
+    session: "grandPrix",
+    index: 2,
+    editable: true,
+  };
+
+  it("announces picking up a driver from the pool", () => {
+    expect(announcements.onDragStart({ active: fakeActive(poolDrag) })).toBe(
+      "Picked up Lando Norris from the driver pool.",
+    );
+  });
+
+  it("announces picking up a driver from a prediction position", () => {
+    expect(announcements.onDragStart({ active: fakeActive(placedDrag) })).toBe(
+      "Picked up Lando Norris from belgian-2026, position 1.",
+    );
+  });
+
+  it("announces the position the driver is hovering over", () => {
+    expect(
+      announcements.onDragOver?.({
+        active: fakeActive(poolDrag),
+        over: fakeOver(targetCell),
+      }),
+    ).toBe("Lando Norris is over belgian-2026, position 3.");
+  });
+
+  it("announces when the driver is not over a position", () => {
+    expect(
+      announcements.onDragOver?.({ active: fakeActive(poolDrag), over: null }),
+    ).toBe("Lando Norris is not over a prediction position.");
+  });
+
+  it("announces a successful drop", () => {
+    expect(
+      announcements.onDragEnd({
+        active: fakeActive(poolDrag),
+        over: fakeOver(targetCell),
+      }),
+    ).toBe("Lando Norris was dropped on belgian-2026, position 3.");
+  });
+
+  it("announces a drop outside any position", () => {
+    expect(
+      announcements.onDragEnd({ active: fakeActive(poolDrag), over: null }),
+    ).toBe("Lando Norris was dropped outside a prediction position.");
+  });
+
+  it("announces a cancelled drag", () => {
+    expect(
+      announcements.onDragCancel({ active: fakeActive(poolDrag), over: null }),
+    ).toBe("Dragging Lando Norris was cancelled.");
+  });
+
+  it("returns undefined for draggables without prediction data", () => {
+    const unknown = fakeActive(undefined);
+    expect(announcements.onDragStart({ active: unknown })).toBeUndefined();
+    expect(
+      announcements.onDragEnd({ active: unknown, over: null }),
+    ).toBeUndefined();
+    expect(
+      announcements.onDragCancel({ active: unknown, over: null }),
+    ).toBeUndefined();
   });
 });

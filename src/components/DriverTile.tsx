@@ -31,7 +31,6 @@ export default function DriverTile({ driver, team }: DriverTileProps) {
       isDragging={isDragging}
       {...attributes}
       {...listeners}
-      tabIndex={-1}
     />
   );
 }
@@ -44,7 +43,9 @@ type DriverTileSurfaceProps = {
 };
 
 export function DriverTilePreview({ driver, team }: DriverTileProps) {
-  return <DriverTileSurface driver={driver} team={team} variant="overlay" />;
+  return (
+    <DriverTileSurface driver={driver} team={team} variant="overlay" asStatic />
+  );
 }
 
 export const DriverCellTile = forwardRef<
@@ -144,12 +145,12 @@ function TileContent({
 
 function getTileClasses(variant: DriverTileVariant) {
   if (variant === "pool") {
-    return "relative min-h-11 touch-none select-none overflow-hidden rounded border border-white/10 bg-white/[0.035] px-2 py-1.5 text-left shadow-sm transition hover:border-white/20 hover:bg-white/[0.07] active:cursor-grabbing sm:min-h-10";
+    return "relative min-h-11 touch-none select-none overflow-hidden rounded border border-white/10 bg-white/[0.035] px-2 py-1.5 text-left shadow-sm transition hover:border-white/20 hover:bg-white/[0.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 active:cursor-grabbing sm:min-h-10";
   }
 
   if (variant === "overlay") {
     return "relative grid h-8 w-14 select-none place-items-center overflow-hidden rounded border border-amber-400/50 bg-neutral-900 text-[11px] shadow-2xl shadow-black/40 ring-1 ring-amber-400/30";
   }
 
-  return "relative grid h-full w-full touch-none select-none place-items-center overflow-hidden rounded border border-white/10 bg-white/[0.06] text-[10px] shadow-sm transition hover:border-white/25 active:cursor-grabbing";
+  return "relative grid h-full w-full touch-none select-none place-items-center overflow-hidden rounded border border-white/10 bg-white/[0.06] text-[10px] shadow-sm transition hover:border-white/25 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-amber-400 active:cursor-grabbing";
 }
