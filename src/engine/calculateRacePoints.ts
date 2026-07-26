@@ -2,7 +2,6 @@ import type { EventResultEntry } from "../types/race";
 
 /**
  * F1 2026 Grand Prix points system.
- * Fastest lap points are intentionally not modeled.
  */
 export const POINTS_TABLE: readonly number[] = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
 export const SPRINT_POINTS_TABLE: readonly number[] = [8, 7, 6, 5, 4, 3, 2, 1];
