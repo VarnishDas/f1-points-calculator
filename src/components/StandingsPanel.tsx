@@ -14,6 +14,22 @@ type StandingsPanelProps = {
   wdcStatusByDriverId: Record<string, WdcStatus>;
 };
 
+function getLeaderPoints(standings: Array<{ points: number }>) {
+  if (standings.length === 0) {
+    return 0;
+  }
+
+  return standings.reduce(
+    (leaderPoints, standing) => Math.max(leaderPoints, standing.points),
+    Number.NEGATIVE_INFINITY,
+  );
+}
+
+function formatGapToLeader(points: number, leaderPoints: number) {
+  const gap = leaderPoints - points;
+  return gap === 0 ? "—" : `-${gap}`;
+}
+
 export default function StandingsPanel({
   driverStandings,
   teamStandings,
@@ -30,6 +46,8 @@ export default function StandingsPanel({
     () => new Map(teams.map((team) => [team.id, team])),
     [teams],
   );
+  const driverLeaderPoints = getLeaderPoints(driverStandings);
+  const teamLeaderPoints = getLeaderPoints(teamStandings);
 
   return (
     <aside className="flex w-full flex-col rounded-md border border-white/10 bg-neutral-950/75 shadow-2xl shadow-black/30 lg:h-full lg:max-h-full lg:min-h-0">
@@ -79,7 +97,7 @@ export default function StandingsPanel({
               <tr className="border-b border-white/10 text-left text-[11px] uppercase tracking-wide text-neutral-500">
                 <th scope="col" className="sticky left-0 z-20 w-10 bg-neutral-950 px-2 py-2 font-bold sm:px-4">#</th>
                 <th scope="col" className="px-1 py-2 font-bold">Driver</th>
-                <th scope="col" className="w-10 px-1 py-2 text-right font-bold">W</th>
+                <th scope="col" className="w-12 px-1 py-2 text-right font-bold">Gap</th>
                 <th scope="col" className="w-16 px-2 py-2 text-right font-bold sm:px-4">Pts</th>
               </tr>
             </thead>
@@ -119,7 +137,7 @@ export default function StandingsPanel({
                       </div>
                     </td>
                     <td className="px-1 py-2 text-right tabular-nums text-neutral-500">
-                      {standing.wins}
+                      {formatGapToLeader(standing.points, driverLeaderPoints)}
                     </td>
                     <td className="px-2 py-2 text-right font-black tabular-nums text-amber-400 sm:px-4">
                       {standing.points}
@@ -136,6 +154,7 @@ export default function StandingsPanel({
               <tr className="border-b border-white/10 text-left text-[11px] uppercase tracking-wide text-neutral-500">
                 <th scope="col" className="sticky left-0 z-20 w-10 bg-neutral-950 px-2 py-2 font-bold sm:px-4">#</th>
                 <th scope="col" className="px-1 py-2 font-bold">Constructor</th>
+                <th scope="col" className="w-12 px-1 py-2 text-right font-bold">Gap</th>
                 <th scope="col" className="w-16 px-2 py-2 text-right font-bold sm:px-4">Pts</th>
               </tr>
             </thead>
@@ -162,6 +181,9 @@ export default function StandingsPanel({
                           {team?.name ?? standing.teamId}
                         </span>
                       </div>
+                    </td>
+                    <td className="px-1 py-2 text-right tabular-nums text-neutral-500">
+                      {formatGapToLeader(standing.points, teamLeaderPoints)}
                     </td>
                     <td className="px-2 py-2 text-right font-black tabular-nums text-amber-400 sm:px-4">
                       {standing.points}
