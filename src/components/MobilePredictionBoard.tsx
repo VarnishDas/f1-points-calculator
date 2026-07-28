@@ -5,7 +5,11 @@ import type { PredictionSessionType, Race } from "../types/race";
 import type { Team } from "../types/team";
 import { getClassificationSize } from "../utils/classification";
 import { isPredictionSessionEditable } from "../utils/predictionSession";
-import { getInitialMobileRaceId } from "./mobilePredictionBoardState";
+import {
+  getDefaultMobileSession,
+  getInitialMobileRaceId,
+  hasMobileSprintSession,
+} from "./mobilePredictionBoardState";
 import { placeDriverAtPredictionPosition } from "./predictionDnd";
 
 type MobilePredictionBoardProps = {
@@ -40,7 +44,11 @@ export default function MobilePredictionBoard({
   const [selectedRaceId, setSelectedRaceId] = useState(
     () => getInitialMobileRaceId(sortedRaces) ?? "",
   );
-  const [session, setSession] = useState<PredictionSessionType>("grandPrix");
+  const [session, setSession] = useState<PredictionSessionType>(() => {
+    const initialRaceId = getInitialMobileRaceId(sortedRaces);
+    const initialRace = sortedRaces.find((race) => race.id === initialRaceId);
+    return initialRace ? getDefaultMobileSession(initialRace) : "grandPrix";
+  });
   const [selectedPosition, setSelectedPosition] = useState<number | null>(null);
   const [driverSearch, setDriverSearch] = useState("");
   const pickerViewportRef = useRef<HTMLDivElement>(null);
@@ -50,7 +58,7 @@ export default function MobilePredictionBoard({
     sortedRaces.findIndex((race) => race.id === selectedRaceId),
   );
   const selectedRace = sortedRaces[selectedRaceIndex];
-  const hasSprint = selectedRace ? hasSprintSession(selectedRace) : false;
+  const hasSprint = selectedRace ? hasMobileSprintSession(selectedRace) : false;
 
   useEffect(() => {
     if (selectedPosition === null) return;
@@ -128,7 +136,7 @@ export default function MobilePredictionBoard({
     const race = sortedRaces[index];
     if (!race) return;
     setSelectedRaceId(race.id);
-    setSession("grandPrix");
+    setSession(getDefaultMobileSession(race));
     setSelectedPosition(null);
     setDriverSearch("");
   };
@@ -209,14 +217,14 @@ export default function MobilePredictionBoard({
           {hasSprint ? (
             <div className="grid grid-cols-2 rounded-md border border-white/10 bg-black/25 p-1">
               <SessionButton
-                active={session === "grandPrix"}
-                label="Grand Prix"
-                onClick={() => selectSession("grandPrix")}
-              />
-              <SessionButton
                 active={session === "sprint"}
                 label="Sprint"
                 onClick={() => selectSession("sprint")}
+              />
+              <SessionButton
+                active={session === "grandPrix"}
+                label="Grand Prix"
+                onClick={() => selectSession("grandPrix")}
               />
             </div>
           ) : (
@@ -426,14 +434,6 @@ function SessionButton({ active, label, onClick }: SessionButtonProps) {
     >
       {label}
     </button>
-  );
-}
-
-function hasSprintSession(race: Race): boolean {
-  return !!(
-    race.hasSprint ||
-    race.sprintResult?.length ||
-    race.sprintPrediction?.length
   );
 }
 
