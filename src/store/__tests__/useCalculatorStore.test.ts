@@ -4,6 +4,14 @@ import { drivers as staticDrivers, races as staticRaces, teams as staticTeams } 
 import { RACE_CLASSIFICATION_SIZE } from "../../constants/race";
 import type { ScenarioPredictionsBySession } from "../../utils/encodeScenario";
 
+function findUpcomingSprintRace(editable = false) {
+  return useCalculatorStore.getState().races.find((race) =>
+    race.status === "upcoming" &&
+    race.hasSprint &&
+    (!editable || !race.sprintResult?.length),
+  );
+}
+
 describe("useCalculatorStore", () => {
   beforeEach(() => {
     useCalculatorStore.getState().resetPredictions();
@@ -218,10 +226,9 @@ describe("sprint weekend predictions", () => {
   });
 
   it("updatePrediction stores a GP prediction on an upcoming sprint weekend", () => {
-    const upcomingSprint = useCalculatorStore
-      .getState()
-      .races.find((r) => r.status === "upcoming" && r.hasSprint);
+    const upcomingSprint = findUpcomingSprintRace();
     if (!upcomingSprint) throw new Error("expected an upcoming sprint race");
+    const originalSprintResult = upcomingSprint.sprintResult;
 
     useCalculatorStore
       .getState()
@@ -231,13 +238,11 @@ describe("sprint weekend predictions", () => {
       .getState()
       .races.find((r) => r.id === upcomingSprint.id);
     expect(updated?.prediction).toEqual(["norris", "piastri", "verstappen"]);
-    expect(updated?.sprintResult).toBeNull();
+    expect(updated?.sprintResult).toEqual(originalSprintResult);
   });
 
   it("updatePrediction stores a sprint prediction on an upcoming sprint weekend", () => {
-    const upcomingSprint = useCalculatorStore
-      .getState()
-      .races.find((r) => r.status === "upcoming" && r.hasSprint);
+    const upcomingSprint = findUpcomingSprintRace(true);
     if (!upcomingSprint) throw new Error("expected an upcoming sprint race");
 
     useCalculatorStore
@@ -264,9 +269,7 @@ describe("sprint weekend predictions", () => {
   });
 
   it("clearPredictionPosition removes the correct GP slot on a sprint weekend", () => {
-    const upcomingSprint = useCalculatorStore
-      .getState()
-      .races.find((r) => r.status === "upcoming" && r.hasSprint);
+    const upcomingSprint = findUpcomingSprintRace();
     if (!upcomingSprint) throw new Error("expected an upcoming sprint race");
 
     useCalculatorStore
@@ -284,9 +287,7 @@ describe("sprint weekend predictions", () => {
   });
 
   it("clearPredictionPosition removes the correct sprint slot on a sprint weekend", () => {
-    const upcomingSprint = useCalculatorStore
-      .getState()
-      .races.find((r) => r.status === "upcoming" && r.hasSprint);
+    const upcomingSprint = findUpcomingSprintRace(true);
     if (!upcomingSprint) throw new Error("expected an upcoming sprint race");
 
     useCalculatorStore
@@ -486,9 +487,7 @@ describe("applyScenario", () => {
   });
 
   it("applies sprint predictions to upcoming sprint races", () => {
-    const upcomingSprint = useCalculatorStore
-      .getState()
-      .races.find((r) => r.status === "upcoming" && r.hasSprint);
+    const upcomingSprint = findUpcomingSprintRace(true);
     if (!upcomingSprint) throw new Error("expected an upcoming sprint race");
 
     const scenario: ScenarioPredictionsBySession = {

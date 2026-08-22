@@ -246,6 +246,33 @@ describe("transformSourceData", () => {
     expect(generated.teams.map((team) => team.id)).not.toContain("legacy-team");
   });
 
+  it("keeps the GP upcoming when a Sprint result arrives first", () => {
+    const generated = transformSourceData(
+      { ...source, grandPrixResults: [] },
+      existing,
+      2026,
+      "2026-07-05T00:00:00.000Z",
+    );
+    const race = generated.races.find((candidate) => candidate.round === 1);
+
+    expect(race).toMatchObject({
+      status: "upcoming",
+      hasSprint: true,
+      grandPrixResult: null,
+      prediction: null,
+      sprintPrediction: null,
+    });
+    expect(race?.sprintResult).toEqual([
+      {
+        position: 1,
+        driverId: "reserve-driver",
+        teamId: "racing-bulls",
+        status: "Finished",
+        points: 8,
+      },
+    ]);
+  });
+
   it("uses a driver's last name when Jolpica has no reliable code", () => {
     const generated = transformSourceData(
       source,
