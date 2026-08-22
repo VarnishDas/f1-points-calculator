@@ -126,7 +126,7 @@
     "code": "LAW",
     "firstName": "Liam",
     "lastName": "Lawson",
-    "teamId": "racing-bulls",
+    "teamId": "red-bull",
     "country": "New Zealander"
   },
   {
@@ -208,6 +208,16 @@
     "lastName": "Stroll",
     "teamId": "aston-martin",
     "country": "Canadian"
+  },
+  {
+    "id": "tsunoda",
+    "sourceId": "tsunoda",
+    "number": 22,
+    "code": "TSU",
+    "firstName": "Yuki",
+    "lastName": "Tsunoda",
+    "teamId": "racing-bulls",
+    "country": "Japanese"
   },
   {
     "id": "verstappen",
