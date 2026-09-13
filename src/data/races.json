@@ -2964,9 +2964,164 @@
     "name": "Spanish Grand Prix",
     "circuit": "Madring",
     "date": "2026-09-13",
-    "status": "upcoming",
+    "status": "completed",
     "hasSprint": false,
-    "grandPrixResult": null,
+    "grandPrixResult": [
+      {
+        "position": 1,
+        "driverId": "antonelli",
+        "teamId": "mercedes",
+        "status": "Finished",
+        "points": 25
+      },
+      {
+        "position": 2,
+        "driverId": "verstappen",
+        "teamId": "red-bull",
+        "status": "Finished",
+        "points": 18
+      },
+      {
+        "position": 3,
+        "driverId": "norris",
+        "teamId": "mclaren",
+        "status": "Finished",
+        "points": 15
+      },
+      {
+        "position": 4,
+        "driverId": "leclerc",
+        "teamId": "ferrari",
+        "status": "Finished",
+        "points": 12
+      },
+      {
+        "position": 5,
+        "driverId": "russell",
+        "teamId": "mercedes",
+        "status": "Finished",
+        "points": 10
+      },
+      {
+        "position": 6,
+        "driverId": "lawson",
+        "teamId": "red-bull",
+        "status": "Finished",
+        "points": 8
+      },
+      {
+        "position": 7,
+        "driverId": "colapinto",
+        "teamId": "alpine",
+        "status": "Finished",
+        "points": 6
+      },
+      {
+        "position": 8,
+        "driverId": "piastri",
+        "teamId": "mclaren",
+        "status": "Finished",
+        "points": 4
+      },
+      {
+        "position": 9,
+        "driverId": "arvid-lindblad",
+        "teamId": "racing-bulls",
+        "status": "Lapped",
+        "points": 2
+      },
+      {
+        "position": 10,
+        "driverId": "hulkenberg",
+        "teamId": "audi",
+        "status": "Lapped",
+        "points": 1
+      },
+      {
+        "position": 11,
+        "driverId": "ocon",
+        "teamId": "haas",
+        "status": "Lapped",
+        "points": 0
+      },
+      {
+        "position": 12,
+        "driverId": "gasly",
+        "teamId": "alpine",
+        "status": "Lapped",
+        "points": 0
+      },
+      {
+        "position": 13,
+        "driverId": "bortoleto",
+        "teamId": "audi",
+        "status": "Lapped",
+        "points": 0
+      },
+      {
+        "position": 14,
+        "driverId": "tsunoda",
+        "teamId": "racing-bulls",
+        "status": "Lapped",
+        "points": 0
+      },
+      {
+        "position": 15,
+        "driverId": "albon",
+        "teamId": "williams",
+        "status": "Lapped",
+        "points": 0
+      },
+      {
+        "position": 16,
+        "driverId": "bearman",
+        "teamId": "haas",
+        "status": "Lapped",
+        "points": 0
+      },
+      {
+        "position": 17,
+        "driverId": "alonso",
+        "teamId": "aston-martin",
+        "status": "Lapped",
+        "points": 0
+      },
+      {
+        "position": 18,
+        "driverId": "bottas",
+        "teamId": "cadillac",
+        "status": "Lapped",
+        "points": 0
+      },
+      {
+        "position": 19,
+        "driverId": "sainz",
+        "teamId": "williams",
+        "status": "Retired",
+        "points": 0
+      },
+      {
+        "position": 20,
+        "driverId": "perez",
+        "teamId": "cadillac",
+        "status": "Retired",
+        "points": 0
+      },
+      {
+        "position": 21,
+        "driverId": "stroll",
+        "teamId": "aston-martin",
+        "status": "Retired",
+        "points": 0
+      },
+      {
+        "position": 22,
+        "driverId": "hamilton",
+        "teamId": "ferrari",
+        "status": "Retired",
+        "points": 0
+      }
+    ],
     "sprintResult": null,
     "prediction": null,
     "sprintPrediction": null
